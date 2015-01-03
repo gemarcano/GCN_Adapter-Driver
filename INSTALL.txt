@@ -1,0 +1,51 @@
+------------------------------------
+Setup
+------------------------------------
+After building the driver from source, depending on your architecture, navigate
+to "%ARCH%\%Windows Version%\GCN_Adapter Package" and verify that the following
+files are there: 	
+	gcn_adapter.cat
+	GCN_Adapter.inf
+	GCN_Adapter.sys
+	WdfCoinstaller01011.dll
+	
+If so, the driver is ready to be installed. If not, try recompiling the
+driver. These files should be put there by the compilation process, so make
+sure Visual Studio 2013 is installed properly and that WDK 8.1 is installed.
+
+------------------------------------
+Windows Test Mode
+------------------------------------
+One of the problems with the driver is that it is not signed by default. This
+will cause for it to not be installable in modern Windows systems. The only
+way to get around this limitation is to make Windows enter into Test mode.
+This can be done by the following commands on the command prompt when launched
+as an Administrator:
+	bcdedit.exe -set loadoptions DDISABLE_INTEGRITY_CHECKS
+	bcdedit.exe -set TESTSIGNING ON
+	
+Windows needs to be restarted for this to take effect.
+	
+If for some reason one wants to delete the driver and/or re-enable Windows driver checking, do:
+	bcdedit.exe -deletevalue loadoptions
+	bcdedit.exe -set TESTSIGNING OFF
+
+These commands will allow Windows to resume normal operation. This will also prevent the driver from working, since it is not signed.
+
+------------------------------------
+Installation (Requires Windows Test Mode)
+------------------------------------
+Plug in the adapter and watch Windows fail to find a driver. If at any time Windows asks you for an installation disk or something of the sort, the "GCN_Adapter Package" directory is that installation disk. Select "Have disk" and navigate to the Package directory, and select the .inf file. The driver should now be installed.
+
+If Windows did not prompt for a disk or just said that it failed, to install the proper driver navigate to the device manager. One way to do this is to press Win+R and then input
+	mmc devmgmt.msc
+
+At the install manager, find the USB device that failed to install (it should have a yellow warning sign on its icon). Right click on it, go to the Details tab, and on the scroll down menu select "Hardware Ids". Verify that one of the Ids matches with this:
+	USB\VID_057E&PID_0337&REV_0100
+
+If it matches, this is the right device. If not, keep searching. If it is the right device, go to the Driver tab, and press the "Update Driver..." button. Select "Browse my computer for driver software"->"Let me pick from a list of device drivers on my computer"->"Have Disk..." . Now browse to the Package directory and select the GCN_Adapter.inf file. Windows will complain about the driver being unsigned, but select to continue with the installation. That should be it!
+
+------------------------------------
+Testing
+------------------------------------
+To make sure that the driver is loaded properly, in the device manager there should be 4 new HID controllers under the "Human Interface Devices" list, and there should be one "Gamecube Controller Adapter" listed. To test the controllers, find Devices and Printers in Windows, right click on the Adapter from the device list, and select "Game controller settings." From these settings, select the controller to test (they should be in order) and click properties. Pressing buttons should cause for the status dialog to change, as well as moving the analog sticks.
