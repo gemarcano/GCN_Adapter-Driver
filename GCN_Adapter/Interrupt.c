@@ -2,11 +2,11 @@
 #include "interrupt.tmh"
 
 #ifdef ALLOC_PRAGMA
-#pragma alloc_text(PAGE, GCN_AdaptorConfigContReaderForInterruptEndPoint)
+#pragma alloc_text(PAGE, GCN_AdapterConfigContReaderForInterruptEndPoint)
 #endif
 
 _IRQL_requires_(PASSIVE_LEVEL)
-NTSTATUS GCN_AdaptorConfigContReaderForInterruptEndPoint(
+NTSTATUS GCN_AdapterConfigContReaderForInterruptEndPoint(
 	_In_ PDEVICE_CONTEXT apDeviceContext)
 {
 	WDF_USB_CONTINUOUS_READER_CONFIG contReaderConfig;
@@ -16,11 +16,11 @@ NTSTATUS GCN_AdaptorConfigContReaderForInterruptEndPoint(
 
 	WDF_USB_CONTINUOUS_READER_CONFIG_INIT(
 		&contReaderConfig,
-		GCN_AdaptorEvtUsbInterruptPipeReadComplete,
+		GCN_AdapterEvtUsbInterruptPipeReadComplete,
 		apDeviceContext,    // Context
 		sizeof(UCHAR));   // TransferLength
 
-	contReaderConfig.EvtUsbTargetPipeReadersFailed = GCN_AdaptorEvtUsbInterruptReadersFailed;
+	contReaderConfig.EvtUsbTargetPipeReadersFailed = GCN_AdapterEvtUsbInterruptReadersFailed;
 	contReaderConfig.TransferLength = 37; //number obtained from USB descriptor for endpoint
 	contReaderConfig.NumPendingReads = 0; //Use default
 
@@ -32,7 +32,7 @@ NTSTATUS GCN_AdaptorConfigContReaderForInterruptEndPoint(
 	if (!NT_SUCCESS(status))
 	{
 		TraceEvents(TRACE_LEVEL_ERROR, TRACE_INTERRUPT,
-			"GCN_AdaptorConfigContReaderForInterruptEndPoint failed %x\n",
+			"GCN_AdapterConfigContReaderForInterruptEndPoint failed %x\n",
 			status);
 		return status;
 	}
@@ -40,7 +40,7 @@ NTSTATUS GCN_AdaptorConfigContReaderForInterruptEndPoint(
 	return status;
 }
 
-VOID GCN_AdaptorEvtUsbInterruptPipeReadComplete(
+VOID GCN_AdapterEvtUsbInterruptPipeReadComplete(
 	WDFUSBPIPE aPipe,
 	WDFMEMORY aBuffer,
 	size_t aNumBytesTransferred,
@@ -56,7 +56,7 @@ VOID GCN_AdaptorEvtUsbInterruptPipeReadComplete(
 	if (aNumBytesTransferred == 0)
 	{
 		TraceEvents(TRACE_LEVEL_WARNING, TRACE_INTERRUPT,
-			"GCN_AdaptorEvtUsbInterruptPipeReadComplete Zero length read "
+			"GCN_AdapterEvtUsbInterruptPipeReadComplete Zero length read "
 			"occured on the Interrupt Pipe's Continuous Reader\n"
 			);
 		return;
@@ -68,15 +68,15 @@ VOID GCN_AdaptorEvtUsbInterruptPipeReadComplete(
 	memcpy(&pDeviceContext->adaptorData, WdfMemoryGetBuffer(aBuffer, NULL), aNumBytesTransferred);
 
 	TraceEvents(TRACE_LEVEL_VERBOSE, TRACE_INTERRUPT,
-		"GCN_AdaptorEvtUsbInterruptPipeReadComplete matched: %x\n",
+		"GCN_AdapterEvtUsbInterruptPipeReadComplete matched: %x\n",
 		pDeviceContext->adaptorData.Signal == 0x21);
 
 	//Handle next Interrupt Message IOCTLs, READ_REPORT
 	//TODO check if this is the only IOCTL message we need to deal with
-	GCN_AdaptorUsbIoctlGetInterruptMessage(device, STATUS_SUCCESS);
+	GCN_AdapterUsbIoctlGetInterruptMessage(device, STATUS_SUCCESS);
 }
 
-BOOLEAN GCN_AdaptorEvtUsbInterruptReadersFailed(
+BOOLEAN GCN_AdapterEvtUsbInterruptReadersFailed(
 	_In_ WDFUSBPIPE aPipe,
 	_In_ NTSTATUS aStatus,
 	_In_ USBD_STATUS aUsbdStatus)
@@ -87,7 +87,7 @@ BOOLEAN GCN_AdaptorEvtUsbInterruptReadersFailed(
 	UNREFERENCED_PARAMETER(aUsbdStatus);
 	
 	//FIXME do we want to handle messages even when reading from the device failed?
-	//GCN_AdaptorUsbIoctlGetInterruptMessage(device, aStatus);
+	//GCN_AdapterUsbIoctlGetInterruptMessage(device, aStatus);
 
 	return TRUE;
 }

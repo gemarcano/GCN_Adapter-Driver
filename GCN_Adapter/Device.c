@@ -3,13 +3,13 @@
 #include "Public.h"
 
 #ifdef ALLOC_PRAGMA
-#pragma alloc_text (PAGE, GCN_AdaptorCreateDevice)
-#pragma alloc_text (PAGE, GCN_AdaptorEvtDevicePrepareHardware)
+#pragma alloc_text (PAGE, GCN_AdapterCreateDevice)
+#pragma alloc_text (PAGE, GCN_AdapterEvtDevicePrepareHardware)
 #pragma alloc_text (PAGE, SelectInterfaces)
-#pragma alloc_text (PAGE, GCN_AdaptorSetPowerPolicy)
+#pragma alloc_text (PAGE, GCN_AdapterSetPowerPolicy)
 #endif
 
-NTSTATUS GCN_AdaptorCreateDevice(
+NTSTATUS GCN_AdapterCreateDevice(
 	_Inout_ PWDFDEVICE_INIT aDeviceInit)
 {
 	WDF_PNPPOWER_EVENT_CALLBACKS pnpPowerCallbacks;
@@ -21,7 +21,7 @@ NTSTATUS GCN_AdaptorCreateDevice(
 
 	PAGED_CODE();
 
-	status = GCN_AdaptorPnPInitialize(aDeviceInit);
+	status = GCN_AdapterPnPInitialize(aDeviceInit);
 
 	if (!NT_SUCCESS(status))
 	{
@@ -53,7 +53,7 @@ NTSTATUS GCN_AdaptorCreateDevice(
 	//
 	status = WdfDeviceCreateDeviceInterface(
 		device,
-		&GUID_DEVINTERFACE_GCN_Adaptor,
+		&GUID_DEVINTERFACE_GCN_Adapter,
 		NULL); // ReferenceString
 
 	if (!NT_SUCCESS(status))
@@ -61,7 +61,7 @@ NTSTATUS GCN_AdaptorCreateDevice(
 		goto Error;
 	}
 	
-	status = GCN_AdaptorQueueInitialize(device);
+	status = GCN_AdapterQueueInitialize(device);
 	if (!NT_SUCCESS(status))
 	{
 		goto Error;
@@ -74,7 +74,7 @@ Error:
 	return status;
 }
 
-NTSTATUS GCN_AdaptorEvtDevicePrepareHardware(
+NTSTATUS GCN_AdapterEvtDevicePrepareHardware(
 	_In_ WDFDEVICE aDevice,
 	_In_ WDFCMRESLIST aResourceList,
 	_In_ WDFCMRESLIST aResourceListTranslated)
@@ -90,6 +90,7 @@ NTSTATUS GCN_AdaptorEvtDevicePrepareHardware(
 	WDF_OBJECT_ATTRIBUTES attributes;
 
 	WDF_USB_CONTROL_SETUP_PACKET setup_packet;
+	GCN_AdapterData calibrationData;
 
 	UNREFERENCED_PARAMETER(aResourceList);
 	UNREFERENCED_PARAMETER(aResourceListTranslated);
@@ -189,19 +190,22 @@ NTSTATUS GCN_AdaptorEvtDevicePrepareHardware(
 		return status;
 	}
 
+	//Fetch calibration data
+	GCN_AdapterFetchCalibrationData(pDeviceContext, &memoryDescriptor);
+
 	//
 	// Enable wait-wake and idle timeout if the device supports it (Filter HID does not support this?)
 	//
 	/*if (waitWakeEnable) {
-		status = GCN_AdaptorSetPowerPolicy(Device);
+		status = GCN_AdapterSetPowerPolicy(Device);
 		if (!NT_SUCCESS(status)) {
 			TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE,
-				"GCN_AdaptorSetPowerPolicy failed  %!STATUS!\n", status);
+				"GCN_AdapterSetPowerPolicy failed  %!STATUS!\n", status);
 			return status;
 		}
 	}*/
 
-	status = GCN_AdaptorConfigContReaderForInterruptEndPoint(pDeviceContext);
+	status = GCN_AdapterConfigContReaderForInterruptEndPoint(pDeviceContext);
 
 	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_DRIVER, "%!FUNC! Exit");
 
@@ -286,18 +290,18 @@ NTSTATUS SelectInterfaces(
 	return status;
 }
 
-NTSTATUS GCN_AdaptorPnPInitialize(
+NTSTATUS GCN_AdapterPnPInitialize(
 	_In_ PWDFDEVICE_INIT aDeviceInit)
 {
 	NTSTATUS status = STATUS_SUCCESS;
 	WDF_PNPPOWER_EVENT_CALLBACKS pnpPowerCallbacks;
 
 	WDF_PNPPOWER_EVENT_CALLBACKS_INIT(&pnpPowerCallbacks);
-	pnpPowerCallbacks.EvtDevicePrepareHardware = GCN_AdaptorEvtDevicePrepareHardware;
+	pnpPowerCallbacks.EvtDevicePrepareHardware = GCN_AdapterEvtDevicePrepareHardware;
 	
-	pnpPowerCallbacks.EvtDeviceD0Entry = GCN_AdaptorEvtDeviceD0Entry;
-	pnpPowerCallbacks.EvtDeviceD0Exit = GCN_AdaptorEvtDeviceD0Exit;
-	pnpPowerCallbacks.EvtDeviceSelfManagedIoFlush = GCN_AdaptorEvtDeviceSelfManagedIoFlush;
+	pnpPowerCallbacks.EvtDeviceD0Entry = GCN_AdapterEvtDeviceD0Entry;
+	pnpPowerCallbacks.EvtDeviceD0Exit = GCN_AdapterEvtDeviceD0Exit;
+	pnpPowerCallbacks.EvtDeviceSelfManagedIoFlush = GCN_AdapterEvtDeviceSelfManagedIoFlush;
 
 	WdfDeviceInitSetPnpPowerEventCallbacks(aDeviceInit, &pnpPowerCallbacks);
 
@@ -305,7 +309,7 @@ NTSTATUS GCN_AdaptorPnPInitialize(
 }
 
 _IRQL_requires_(PASSIVE_LEVEL)
-NTSTATUS GCN_AdaptorSetPowerPolicy(
+NTSTATUS GCN_AdapterSetPowerPolicy(
 	_In_ WDFDEVICE aDevice)
 {
 	WDF_DEVICE_POWER_POLICY_IDLE_SETTINGS idleSettings;
@@ -338,8 +342,26 @@ NTSTATUS GCN_AdaptorSetPowerPolicy(
 	return status;
 }
 
-VOID GCN_AdaptorEvtDeviceSelfManagedIoFlush(
+VOID GCN_AdapterEvtDeviceSelfManagedIoFlush(
 	_In_ WDFDEVICE aDevice)
 {
-	GCN_AdaptorUsbIoctlGetInterruptMessage(aDevice, STATUS_DEVICE_REMOVED);
+	GCN_AdapterUsbIoctlGetInterruptMessage(aDevice, STATUS_DEVICE_REMOVED);
+}
+
+NTSTATUS GCN_AdapterFetchCalibrationData(PDEVICE_CONTEXT _In_ apDeviceContext, PWDF_MEMORY_DESCRIPTOR _Out_ apMemoryDescriptor)
+{
+	NTSTATUS status;
+	GCN_AdapterData calibrationData;
+
+	WDF_MEMORY_DESCRIPTOR_INIT_BUFFER(apMemoryDescriptor, &calibrationData, sizeof(calibrationData));
+	status = WdfUsbTargetPipeReadSynchronously(apDeviceContext->interruptReadPipe, NULL, NULL, apMemoryDescriptor, NULL);
+	if (!NT_SUCCESS(status))
+	{
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE,
+			"WdfUsbTargetPipeReadSynchronously failed (Init device) %!STATUS!\n", status);
+		return status;
+	}
+
+	apDeviceContext->calibrationData = calibrationData;
+	return status;
 }

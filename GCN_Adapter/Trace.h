@@ -9,7 +9,7 @@
 
 #define WPP_CONTROL_GUIDS												\
 	WPP_DEFINE_CONTROL_GUID(											\
-		GCN_AdaptorTraceGuid, (00df223a,e76d,4b5c,9ea6,6300b47ec3c0),	\
+		GCN_AdapterTraceGuid, (00df223a,e76d,4b5c,9ea6,6300b47ec3c0),	\
 																		\
 		WPP_DEFINE_BIT(MYDRIVER_ALL_INFO)								\
 		WPP_DEFINE_BIT(TRACE_DRIVER)									\

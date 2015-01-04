@@ -5,17 +5,17 @@
 #include <ntddk.h>
 #include <wdf.h>
 
-typedef struct _GCN_AdaptorData
+typedef struct _GCN_AdapterData
 {
 	BYTE Signal;
 
 	struct {
 		struct
 		{
-			BYTE:2;
-			BYTE type : 2;
-			BYTE powered : 1;
 			BYTE:3;
+			BYTE powered : 1;
+			BYTE type : 2;
+			BYTE:2;
 		} Status;
 		struct {
 			BYTE a : 1;
@@ -32,7 +32,7 @@ typedef struct _GCN_AdaptorData
 			BYTE z : 1;
 			BYTE r : 1;
 			BYTE l : 1;
-		BYTE: 4;
+			BYTE: 4;
 		} Buttons2;
 		struct {
 			BYTE X, Y;
@@ -46,7 +46,7 @@ typedef struct _GCN_AdaptorData
 			BYTE left, right;
 		} ShoulderAxis;
 	}Port[4];
-} GCN_AdaptorData;
+} GCN_AdapterData;
 
 typedef struct _GCN_ControllerReport
 {
@@ -66,7 +66,7 @@ typedef struct _GCN_ControllerReport
 		BYTE z : 1;
 		BYTE r : 1;
 		BYTE l : 1;
-	BYTE: 4;
+		BYTE: 4;
 	} Buttons2;
 	struct {
 		BYTE X, Y;
@@ -81,9 +81,11 @@ typedef struct _GCN_ControllerReport
 	} ShoulderAxis;
 } GCN_ControllerReport;
 
-typedef struct _GCN_AdaptorReport
+typedef struct _GCN_AdapterReport
 {
 	GCN_ControllerReport Port[4];
-} GCN_AdaptorReport;
+} GCN_AdapterReport;
+
+extern GCN_ControllerReport GCN_AdapterControllerZero;
 
 #endif//_GCN_ADAPTOR_GCN_CONTROLLER_H_

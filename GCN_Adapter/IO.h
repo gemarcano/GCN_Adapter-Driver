@@ -14,7 +14,7 @@
  *	@post Request is handled asynchronously.
  *
  */
-VOID GCN_AdaptorEvtIoRead(
+VOID GCN_AdapterEvtIoRead(
 	_In_ WDFQUEUE aQueue,
 	_In_ WDFREQUEST aRequest,
 	_In_ size_t aLength);
@@ -29,7 +29,7 @@ VOID GCN_AdaptorEvtIoRead(
 *	@post Request is handled asynchronously.
 *
 */
-VOID GCN_AdaptorEvtIoWrite(
+VOID GCN_AdapterEvtIoWrite(
 	_In_ WDFQUEUE aQueue,
 	_In_ WDFREQUEST aRequest,
 	_In_ size_t	aLength);
@@ -60,7 +60,7 @@ VOID EvtRequestWriteCompletionRoutine(
  *	@post ?FIXME
  *
  */
-VOID GCN_AdaptorEvtIoStop(
+VOID GCN_AdapterEvtIoStop(
 	_In_ WDFQUEUE aQueue,
 	_In_ WDFREQUEST aRequest,
 	_In_ ULONG aActionFlags);

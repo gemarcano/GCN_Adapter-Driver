@@ -2,7 +2,7 @@
 #include "power.tmh"
 
 #ifdef ALLOC_PRAGMA
-#pragma alloc_text(PAGE, GCN_AdaptorEvtDeviceD0Exit)
+#pragma alloc_text(PAGE, GCN_AdapterEvtDeviceD0Exit)
 #endif
 
 _IRQL_requires_(PASSIVE_LEVEL)
@@ -31,7 +31,7 @@ PCHAR DbgDevicePowerString(_In_ WDF_POWER_DEVICE_STATE Type)
 	}
 }
 
-NTSTATUS GCN_AdaptorEvtDeviceD0Entry(WDFDEVICE aDevice, WDF_POWER_DEVICE_STATE aPreviousState)
+NTSTATUS GCN_AdapterEvtDeviceD0Entry(WDFDEVICE aDevice, WDF_POWER_DEVICE_STATE aPreviousState)
 {
 	PDEVICE_CONTEXT pDeviceContext;
 	NTSTATUS status;
@@ -41,7 +41,7 @@ NTSTATUS GCN_AdaptorEvtDeviceD0Entry(WDFDEVICE aDevice, WDF_POWER_DEVICE_STATE a
 	isTargetStarted = FALSE;
 
 	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_POWER,
-		"-->GCN_AdaptorEvtEvtDeviceD0Entry - coming from %s\n",
+		"-->GCN_AdapterEvtEvtDeviceD0Entry - coming from %s\n",
 		DbgDevicePowerString(aPreviousState));
 
 	//Start the continuous reader here...
@@ -66,26 +66,26 @@ End:
 		}
 	}
 
-	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_POWER, "<--GCN_AdaptorEvtEvtDeviceD0Entry\n");
+	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_POWER, "<--GCN_AdapterEvtEvtDeviceD0Entry\n");
 
 	return status;
 }
 
-NTSTATUS GCN_AdaptorEvtDeviceD0Exit(WDFDEVICE aDevice, WDF_POWER_DEVICE_STATE aTargetState)
+NTSTATUS GCN_AdapterEvtDeviceD0Exit(WDFDEVICE aDevice, WDF_POWER_DEVICE_STATE aTargetState)
 {
 	PDEVICE_CONTEXT pDeviceContext;
 
 	PAGED_CODE();
 
 	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_POWER,
-		"-->GCN_AdaptorEvtDeviceD0Exit - moving to %s\n",
+		"-->GCN_AdapterEvtDeviceD0Exit - moving to %s\n",
 		DbgDevicePowerString(aTargetState));
 
 	pDeviceContext = DeviceGetContext(aDevice);
 
 	WdfIoTargetStop(WdfUsbTargetPipeGetIoTarget(pDeviceContext->interruptReadPipe), WdfIoTargetCancelSentIo);
 
-	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_POWER, "<--GCN_AdaptorEvtDeviceD0Exit\n");
+	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_POWER, "<--GCN_AdapterEvtDeviceD0Exit\n");
 
 	return STATUS_SUCCESS;
 }

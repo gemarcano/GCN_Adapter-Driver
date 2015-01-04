@@ -1,7 +1,7 @@
 #include "Include.h"
 #include "io.tmh"
 
-VOID GCN_AdaptorEvtIoRead(
+VOID GCN_AdapterEvtIoRead(
 	_In_ WDFQUEUE Queue,
 	_In_ WDFREQUEST Request,
 	_In_ size_t Length)
@@ -13,7 +13,7 @@ VOID GCN_AdaptorEvtIoRead(
 
 	UNREFERENCED_PARAMETER(Queue);
 
-	TraceEvents(TRACE_LEVEL_VERBOSE, TRACE_IO, "-->GCN_AdaptorEvtIoRead\n");
+	TraceEvents(TRACE_LEVEL_VERBOSE, TRACE_IO, "-->GCN_AdapterEvtIoRead\n");
 
 	//Validate input
 	if (Length != 37)
@@ -43,10 +43,10 @@ Exit:
 	{
 		WdfRequestCompleteWithInformation(Request, status, 0);
 	}
-	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_IO, "<-- GCN_AdaptorEvtIoRead\n");
+	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_IO, "<-- GCN_AdapterEvtIoRead\n");
 }
 
-VOID GCN_AdaptorEvtIoWrite(
+VOID GCN_AdapterEvtIoWrite(
 	_In_ WDFQUEUE aQueue,
 	_In_ WDFREQUEST aRequest,
 	_In_ size_t aLength)
@@ -59,7 +59,7 @@ VOID GCN_AdaptorEvtIoWrite(
 	
 	UNREFERENCED_PARAMETER(aQueue);
 
-	TraceEvents(TRACE_LEVEL_VERBOSE, TRACE_IO, "-->GCN_AdaptorEvtIoWrite\n");
+	TraceEvents(TRACE_LEVEL_VERBOSE, TRACE_IO, "-->GCN_AdapterEvtIoWrite\n");
 
 	if (aLength != 5)
 	{
@@ -115,7 +115,7 @@ Exit:
 		WdfRequestCompleteWithInformation(aRequest, status, 0);
 	}
 
-	TraceEvents(TRACE_LEVEL_VERBOSE, TRACE_IO, "<-- GCN_AdaptorEvtIoWrite\n");
+	TraceEvents(TRACE_LEVEL_VERBOSE, TRACE_IO, "<-- GCN_AdapterEvtIoWrite\n");
 
 	return;
 }
@@ -157,7 +157,7 @@ VOID EvtRequestWriteCompletionRoutine(
 	WdfRequestCompleteWithInformation(aRequest, status, bytesWritten);
 }
 
-VOID GCN_AdaptorEvtIoStop(
+VOID GCN_AdapterEvtIoStop(
 	_In_ WDFQUEUE aQueue,
 	_In_ WDFREQUEST aRequest,
 	_In_ ULONG aActionFlags)

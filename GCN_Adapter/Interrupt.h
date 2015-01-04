@@ -12,7 +12,7 @@
  *		http://msdn.microsoft.com/en-us/library/cc704588.aspx for details.
  */
 _IRQL_requires_(PASSIVE_LEVEL)
-NTSTATUS GCN_AdaptorConfigContReaderForInterruptEndPoint(
+NTSTATUS GCN_AdapterConfigContReaderForInterruptEndPoint(
 	_In_ PDEVICE_CONTEXT apDeviceContext);
 
 /**	Handles storing the data read from a continuous read if successful.
@@ -25,7 +25,7 @@ NTSTATUS GCN_AdaptorConfigContReaderForInterruptEndPoint(
  *	@post Data read is stored in device context.
  *
  */
-VOID GCN_AdaptorEvtUsbInterruptPipeReadComplete(
+VOID GCN_AdapterEvtUsbInterruptPipeReadComplete(
 	WDFUSBPIPE aPipe,
 	WDFMEMORY aBuffer,
 	size_t aNumBytesTransferred,
@@ -40,7 +40,7 @@ VOID GCN_AdaptorEvtUsbInterruptPipeReadComplete(
  *	@post FIXME TODO Determine what exactly should happen here...
  *
  */
-BOOLEAN GCN_AdaptorEvtUsbInterruptReadersFailed(
+BOOLEAN GCN_AdapterEvtUsbInterruptReadersFailed(
 	_In_ WDFUSBPIPE aPipe,
 	_In_ NTSTATUS aStatus,
 	_In_ USBD_STATUS aUsbdStatus);

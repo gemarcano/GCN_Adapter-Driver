@@ -3,8 +3,8 @@
 
 #ifdef ALLOC_PRAGMA
 #pragma alloc_text (INIT, DriverEntry)
-#pragma alloc_text (PAGE, GCN_AdaptorEvtDeviceAdd)
-#pragma alloc_text (PAGE, GCN_AdaptorEvtDriverContextCleanup)
+#pragma alloc_text (PAGE, GCN_AdapterEvtDeviceAdd)
+#pragma alloc_text (PAGE, GCN_AdapterEvtDriverContextCleanup)
 #endif
 
 NTSTATUS DriverEntry(
@@ -24,9 +24,9 @@ NTSTATUS DriverEntry(
 	// the framework driver object is deleted during driver unload.
 	//
 	WDF_OBJECT_ATTRIBUTES_INIT(&attributes);
-	attributes.EvtCleanupCallback = GCN_AdaptorEvtDriverContextCleanup;
+	attributes.EvtCleanupCallback = GCN_AdapterEvtDriverContextCleanup;
 
-	WDF_DRIVER_CONFIG_INIT(&config, GCN_AdaptorEvtDeviceAdd);
+	WDF_DRIVER_CONFIG_INIT(&config, GCN_AdapterEvtDeviceAdd);
 
 	status = WdfDriverCreate(
 		aDriverObject,
@@ -47,7 +47,7 @@ NTSTATUS DriverEntry(
 	return status;
 }
 
-NTSTATUS GCN_AdaptorEvtDeviceAdd(
+NTSTATUS GCN_AdapterEvtDeviceAdd(
 	_In_    WDFDRIVER       aDriver,
 	_Inout_ PWDFDEVICE_INIT aDeviceInit)
 {
@@ -62,14 +62,14 @@ NTSTATUS GCN_AdaptorEvtDeviceAdd(
 	// This is a filter driver for the supplied HID minidriver (Win 7 and up)
 	WdfFdoInitSetFilter(aDeviceInit);
 
-	status = GCN_AdaptorCreateDevice(aDeviceInit);
+	status = GCN_AdapterCreateDevice(aDeviceInit);
 
 	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_DRIVER, "%!FUNC! Exit");
 
 	return status;
 }
 
-VOID GCN_AdaptorEvtDriverContextCleanup(
+VOID GCN_AdapterEvtDriverContextCleanup(
 	_In_ WDFOBJECT DriverObject)
 {
 	UNREFERENCED_PARAMETER(DriverObject);

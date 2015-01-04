@@ -27,7 +27,7 @@ DRIVER_INITIALIZE DriverEntry;
  *		http://msdn.microsoft.com/en-us/library/cc704588.aspx for details.
  *
  */
-EVT_WDF_DRIVER_DEVICE_ADD GCN_AdaptorEvtDeviceAdd;
+EVT_WDF_DRIVER_DEVICE_ADD GCN_AdapterEvtDeviceAdd;
 
 /**	Frees all the resources allocated in DriverEntry. Called when driver is
  *	being unloaded from memory.
@@ -37,6 +37,6 @@ EVT_WDF_DRIVER_DEVICE_ADD GCN_AdaptorEvtDeviceAdd;
  *		provided by the framework.
  *
  */
-EVT_WDF_OBJECT_CONTEXT_CLEANUP GCN_AdaptorEvtDriverContextCleanup;
+EVT_WDF_OBJECT_CONTEXT_CLEANUP GCN_AdapterEvtDriverContextCleanup;
 
 #endif//_GCN_ADAPTER_DRIVER_H_

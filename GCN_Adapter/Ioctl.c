@@ -1,10 +1,10 @@
 #include "Include.h"
 #include "ioctl.tmh"
 
-void prepare_report(GCN_AdaptorData * in, GCN_ControllerReport * out);
+void prepare_report(GCN_AdapterData *cal, GCN_AdapterData * in, GCN_ControllerReport * out);
 
 
-VOID GCN_AdaptorUsbIoctlGetInterruptMessage(
+VOID GCN_AdapterUsbIoctlGetInterruptMessage(
 	_In_ WDFDEVICE aDevice,
 	_In_ NTSTATUS  aReaderStatus)
 {
@@ -12,7 +12,7 @@ VOID GCN_AdaptorUsbIoctlGetInterruptMessage(
 	WDFREQUEST request;
 	PDEVICE_CONTEXT pDevContext;
 	size_t bytesToCopy = 0, bytesReturned = 0;
-	GCN_AdaptorData	data;
+	GCN_AdapterData	data;
 	GCN_ControllerReport *pReport;
 
 	pDevContext = DeviceGetContext(aDevice);
@@ -46,7 +46,7 @@ VOID GCN_AdaptorUsbIoctlGetInterruptMessage(
 		{
 			if (NT_SUCCESS(aReaderStatus))
 			{
-				prepare_report(&pDevContext->adaptorData, pReport);
+				prepare_report(&pDevContext->calibrationData, &pDevContext->adaptorData, pReport);
 				bytesReturned = bytesToCopy;
 			}
 			else
@@ -64,7 +64,7 @@ VOID GCN_AdaptorUsbIoctlGetInterruptMessage(
 	}
 }
 
-VOID GCN_AdaptorEvtInternalDeviceControl(
+VOID GCN_AdapterEvtInternalDeviceControl(
 	_In_ WDFQUEUE aQueue,
 	_In_ WDFREQUEST aRequest,
 	_In_ size_t aOutputBufferLength,
@@ -105,21 +105,21 @@ VOID GCN_AdaptorEvtInternalDeviceControl(
 		//
 		// Retrieves the device's HID descriptor.
 		//
-		status = GCN_AdaptorGetHidDescriptor(device, aRequest);
+		status = GCN_AdapterGetHidDescriptor(device, aRequest);
 		break;
 
 	case IOCTL_HID_GET_DEVICE_ATTRIBUTES:
 		//
 		//Retrieves a device's attributes in a HID_DEVICE_ATTRIBUTES structure.
 		//
-		status = GCN_AdaptorGetDeviceAttributes(aRequest);
+		status = GCN_AdapterGetDeviceAttributes(aRequest);
 		break;
 
 	case IOCTL_HID_GET_REPORT_DESCRIPTOR:
 		//
 		//Obtains the report descriptor for the HID device.
 		//
-		status = GCN_AdaptorGetReportDescriptor(device, aRequest);
+		status = GCN_AdapterGetReportDescriptor(device, aRequest);
 		break;
 
 	case IOCTL_HID_READ_REPORT:
@@ -215,7 +215,7 @@ VOID GCN_AdaptorEvtInternalDeviceControl(
 	WdfRequestComplete(aRequest, status);
 }
 
-NTSTATUS GCN_AdaptorGetHidDescriptor(
+NTSTATUS GCN_AdapterGetHidDescriptor(
 	_In_ WDFDEVICE aDevice,
 	_In_ WDFREQUEST aRequest)
 {
@@ -276,7 +276,7 @@ NTSTATUS GCN_AdaptorGetHidDescriptor(
 	return status;
 }
 
-NTSTATUS GCN_AdaptorGetDeviceAttributes(
+NTSTATUS GCN_AdapterGetDeviceAttributes(
 	_In_ WDFREQUEST aRequest)
 {
 	NTSTATUS status;
@@ -326,7 +326,7 @@ NTSTATUS GCN_AdaptorGetDeviceAttributes(
 	return status;
 }
 
-NTSTATUS GCN_AdaptorGetReportDescriptor(
+NTSTATUS GCN_AdapterGetReportDescriptor(
 	_In_ WDFDEVICE aDevice,
 	_In_ WDFREQUEST aRequest)
 {
@@ -390,12 +390,74 @@ NTSTATUS GCN_AdaptorGetReportDescriptor(
 	return status;
 }
 
+
+DWORD32 sqrt32(DWORD64 n)
+{
+	DWORD32 c = 0x8000;
+	DWORD32 g = 0x8000;
+
+	for (;;) {
+		if (g*g > n)
+			g ^= c;
+		c >>= 1;
+		if (c == 0)
+			return g;
+		g |= c;
+	}
+}
+
+__inline double dist_from_center(double vector[2], double center[2])
+{
+	return sqrt32((DWORD64)((vector[0] - center[0])*(vector[0] - center[0]) + (vector[1] - center[1])*(vector[1] - center[1])));
+}
+
+#define DEADZONE 35
+
+__inline double scaled_value(double vector[2], double center[2], double * distance)
+{
+	*distance = dist_from_center(vector, center);
+	return (*distance - DEADZONE) / (255 - DEADZONE);
+}
+
+void null_handle_axis(BYTE axis[2], BYTE zero[2], double center[2])
+{
+	double distance;
+	if ((INT16)axis[0] > (INT16)(center[0] - DEADZONE) && (INT16)axis[0] < (INT16)(center[0] + DEADZONE) &&
+		(INT16)axis[1] > (INT16)(center[1] - DEADZONE) && (INT16)axis[1] < (INT16)(center[1] + DEADZONE))
+	{
+		memcpy(axis, zero, 2);
+	}
+	else
+	{
+		double newAxis[2] = { axis[0], axis[1] };
+		double newMagnitude = scaled_value(newAxis, center, &distance);
+		axis[0] = (BYTE)(255 * newMagnitude * (newAxis[0]-center[0]) / distance + center[0]);
+		axis[1] = (BYTE)(255 * newMagnitude * (newAxis[1]-center[1]) / distance + center[1]);
+	}
+}
+
 //This needs to cycle through the 4 controllers
-void prepare_report(GCN_AdaptorData * in, GCN_ControllerReport * out)
+void prepare_report(GCN_AdapterData *cal, GCN_AdapterData * in, GCN_ControllerReport * out)
 {
 	static BYTE id = 1;
+	double center[2][2] = { { 127, 127 }, { 0, 0 } };
+
+	if (!in->Port[id - 1].Status.type)
+	{
+		memcpy(out, &GCN_AdapterControllerZero, sizeof(*out));
+	}
+	else
+	{
+		memcpy(&(out->Buttons1), &(in->Port[id - 1].Buttons1), 8);
+	}
 	out->id = id;
-	memcpy(&(out->Buttons1), &(in->Port[id-1].Buttons1), 8);
+	
 	out->LeftAxis.Y = ~out->LeftAxis.Y;
-	id = (id + 1) % 5;
+
+	//Handle null zones
+	null_handle_axis((BYTE *)&out->LeftAxis, (BYTE *)&GCN_AdapterControllerZero.LeftAxis, center[0]);
+	null_handle_axis((BYTE *)&out->RightAxis, (BYTE *)&GCN_AdapterControllerZero.RightAxis, center[0]);
+	null_handle_axis((BYTE *)&out->ShoulderAxis, (BYTE *)&GCN_AdapterControllerZero.ShoulderAxis, center[1]);
+
+	id = (id % 4) + 1;
 }

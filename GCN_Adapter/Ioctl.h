@@ -6,17 +6,17 @@
 
 /**	Handles the completion of pended IOCTL requests (READ_REPORT).
  *
- *	@param [in] aDevice USB Device created by GCN_AdaptorCreateDevice. 
+ *	@param [in] aDevice USB Device created by GCN_AdapterCreateDevice. 
  *	@param [in] aReaderStatus Status of how the read went.
  *	
  */
-VOID GCN_AdaptorUsbIoctlGetInterruptMessage(
+VOID GCN_AdapterUsbIoctlGetInterruptMessage(
 	_In_ WDFDEVICE aDevice,
 	_In_ NTSTATUS  aReaderStatus);
 
 /**	Handles returning the HID Descriptor to the given request.
  *
- *	@param [in] aDevice USB Device created by GCN_AdaptorCreateDevice.
+ *	@param [in] aDevice USB Device created by GCN_AdapterCreateDevice.
  *	@param [in] aRequest Request received asking for the HID Descriptor.
  *
  *	@post The request is fullfilled if successful.
@@ -24,7 +24,7 @@ VOID GCN_AdaptorUsbIoctlGetInterruptMessage(
  *	@returns NTSTATUS. @See
  *		http://msdn.microsoft.com/en-us/library/cc704588.aspx for details.
  */
-NTSTATUS GCN_AdaptorGetHidDescriptor(
+NTSTATUS GCN_AdapterGetHidDescriptor(
 	_In_ WDFDEVICE aDevice,
 	_In_ WDFREQUEST aRequest);
 
@@ -36,12 +36,12 @@ NTSTATUS GCN_AdaptorGetHidDescriptor(
  *	@returns NTSTATUS. @See
  *		http://msdn.microsoft.com/en-us/library/cc704588.aspx for details.
  */
-NTSTATUS GCN_AdaptorGetDeviceAttributes(
+NTSTATUS GCN_AdapterGetDeviceAttributes(
 	_In_ WDFREQUEST aRequest);
 
 /**	Handles returning the HID Report Descriptor to the given request.
  *
- *	@param [in] aDevice USB Device created by GCN_AdaptorCreateDevice.
+ *	@param [in] aDevice USB Device created by GCN_AdapterCreateDevice.
  *	@param [in] aRequest Request received asking for the HID Descriptor.
  *
  *	@post The request is fullfilled if successful.
@@ -49,7 +49,7 @@ NTSTATUS GCN_AdaptorGetDeviceAttributes(
  *	@returns NTSTATUS. @See
  *		http://msdn.microsoft.com/en-us/library/cc704588.aspx for details.
  */
-NTSTATUS GCN_AdaptorGetReportDescriptor(
+NTSTATUS GCN_AdapterGetReportDescriptor(
 	_In_ WDFDEVICE aDevice,
 	_In_ WDFREQUEST aRequest);
 
@@ -64,6 +64,6 @@ NTSTATUS GCN_AdaptorGetReportDescriptor(
  *	@post The request is fullfilled one way or another.
  *
  */
-EVT_WDF_IO_QUEUE_IO_INTERNAL_DEVICE_CONTROL GCN_AdaptorEvtInternalDeviceControl;
+EVT_WDF_IO_QUEUE_IO_INTERNAL_DEVICE_CONTROL GCN_AdapterEvtInternalDeviceControl;
 
 #endif//_GCN_ADAPTER_IOCTL_H_

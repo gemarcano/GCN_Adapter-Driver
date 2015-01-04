@@ -2,7 +2,7 @@
 #include "queue.tmh"
 
 #ifdef ALLOC_PRAGMA
-#pragma alloc_text (PAGE, GCN_AdaptorQueueInitialize)
+#pragma alloc_text (PAGE, GCN_AdapterQueueInitialize)
 #endif
 
 /*++
@@ -26,7 +26,7 @@ Return Value:
 VOID
 
 --*/
-NTSTATUS GCN_AdaptorQueueInitialize(_In_ WDFDEVICE aDevice)
+NTSTATUS GCN_AdapterQueueInitialize(_In_ WDFDEVICE aDevice)
 {
     WDFQUEUE queue;
     NTSTATUS status;
@@ -42,8 +42,8 @@ NTSTATUS GCN_AdaptorQueueInitialize(_In_ WDFDEVICE aDevice)
     //
     WDF_IO_QUEUE_CONFIG_INIT_DEFAULT_QUEUE(&queueConfig, WdfIoQueueDispatchParallel);
 
-	queueConfig.EvtIoInternalDeviceControl = GCN_AdaptorEvtInternalDeviceControl;
-    queueConfig.EvtIoStop = GCN_AdaptorEvtIoStop;
+	queueConfig.EvtIoInternalDeviceControl = GCN_AdapterEvtInternalDeviceControl;
+    queueConfig.EvtIoStop = GCN_AdapterEvtIoStop;
 
     status = WdfIoQueueCreate(
                  aDevice,
@@ -66,8 +66,8 @@ NTSTATUS GCN_AdaptorQueueInitialize(_In_ WDFDEVICE aDevice)
 	//
 	WDF_IO_QUEUE_CONFIG_INIT(&queueConfig, WdfIoQueueDispatchSequential);
 
-	queueConfig.EvtIoRead = GCN_AdaptorEvtIoRead;
-	queueConfig.EvtIoStop = GCN_AdaptorEvtIoStop;
+	queueConfig.EvtIoRead = GCN_AdapterEvtIoRead;
+	queueConfig.EvtIoStop = GCN_AdapterEvtIoStop;
 
 	status = WdfIoQueueCreate(
 		aDevice,
@@ -102,8 +102,8 @@ NTSTATUS GCN_AdaptorQueueInitialize(_In_ WDFDEVICE aDevice)
 	//
 	WDF_IO_QUEUE_CONFIG_INIT(&queueConfig, WdfIoQueueDispatchSequential);
 
-	queueConfig.EvtIoWrite = GCN_AdaptorEvtIoWrite;
-	queueConfig.EvtIoStop = GCN_AdaptorEvtIoStop;
+	queueConfig.EvtIoWrite = GCN_AdapterEvtIoWrite;
+	queueConfig.EvtIoStop = GCN_AdapterEvtIoStop;
 
 	status = WdfIoQueueCreate(
 		aDevice,

@@ -89,5 +89,8 @@
     <ClCompile Include="HID.c">
       <Filter>Source Files\Driver</Filter>
     </ClCompile>
+    <ClCompile Include="GCN_Controller.c">
+      <Filter>Source Files\Driver</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

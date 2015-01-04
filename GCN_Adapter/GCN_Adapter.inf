@@ -49,13 +49,13 @@ CopyFilterDriver    = 12
 CopyFiles = CopyFilterDriver
 
 [GCN_Adapter.Inst.Win7.NT.HW]
-AddReg = GCN_Adaptor_Win7_Parameters.AddReg 
+AddReg = GCN_Adapter_Win7_Parameters.AddReg 
 
 ;
 ; mshidkmdf is the function driver and GCN_Adapter is the lower filter
 ;
 [GCN_Adapter.Inst.Win7.NT.Services]
-AddService = GCN_Adapter,, GCN_Adaptor_Service_Inst
+AddService = GCN_Adapter,, GCN_Adapter_Service_Inst
 AddService = mshidkmdf, 0x000001fa, mshidkmdf.AddService ;flag 0x2 sets this as the service for the device
 
 [CopyFilterDriver]
@@ -67,7 +67,7 @@ StartType      = 3                  ; SERVICE_DEMAND_START
 ErrorControl   = 1                  ; SERVICE_ERROR_NORMAL
 ServiceBinary  = %10%\System32\Drivers\mshidkmdf.sys
 
-[GCN_Adaptor_Win7_Parameters.AddReg]
+[GCN_Adapter_Win7_Parameters.AddReg]
 HKR,,"LowerFilters",0x00010000,"GCN_Adapter"
 HKR,,"AllowIdleIrpInD3",0x00010001,0x1
 
@@ -75,7 +75,7 @@ HKR,,"AllowIdleIrpInD3",0x00010001,0x1
 ;   Service section (common to all OS versions)
 ;===============================================================
 
-[GCN_Adaptor_Service_Inst]
+[GCN_Adapter_Service_Inst]
 DisplayName    = %GCN_Adapter%
 ServiceType    = %SERVICE_KERNEL_DRIVER% 
 StartType      = %SERVICE_DEMAND_START% 
@@ -103,9 +103,9 @@ WdfCoInstaller$KMDFCOINSTALLERVERSION$.dll,,,0x00000010    ;COPYFLG_NO_OVERWRITE
 WdfCoInstaller$KMDFCOINSTALLERVERSION$.dll=99 ; make sure the number matches with SourceDisksNames
 
 [GCN_Adapter.Inst.NT.Wdf]
-KmdfService = GCN_Adapter, GCN_Adaptor_wdfsect
+KmdfService = GCN_Adapter, GCN_Adapter_wdfsect
 
-[GCN_Adaptor_wdfsect]
+[GCN_Adapter_wdfsect]
 KmdfLibraryVersion = $KMDFVERSION$
 
 ;================================================================

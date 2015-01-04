@@ -53,6 +53,7 @@
   <ItemGroup>
     <ClCompile Include="Device.c" />
     <ClCompile Include="Driver.c" />
+    <ClCompile Include="GCN_Controller.c" />
     <ClCompile Include="HID.c" />
     <ClCompile Include="Interrupt.c" />
     <ClCompile Include="IO.c" />
