@@ -12,8 +12,9 @@ typedef struct _GCN_AdapterData
 	struct {
 		struct
 		{
-			BYTE:3;
+			BYTE:2;
 			BYTE powered : 1;
+			BYTE:1;
 			BYTE type : 2;
 			BYTE:2;
 		} Status;

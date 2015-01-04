@@ -1,6 +1,6 @@
 ,Bit 7,Bit 6,Bit 5,Bit 4,Bit 3,Bit 2,Bit 1,Bit 0,
 Byte 0,0x21 Byte,,,,,,,,
-Byte 1,,,Wavebird Type,Normal Type,Powered,,,,Port 1
+Byte 1,,,Wavebird Type,Normal Type,,Powered,,,Port 1
 Byte 2,d_up,d_down,d_right,d_left,y,x,b,a,
 Byte 3,,,,,L,R,z,start,
 Byte 4,Analog X byte,,,,,,,,
