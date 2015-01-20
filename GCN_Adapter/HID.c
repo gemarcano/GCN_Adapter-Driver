@@ -138,7 +138,6 @@ CONST HID_DESCRIPTOR HIDDescriptor = {
 	0x00,   // country code == Not Specified
 	0x01,   // number of HID class descriptors
 	{ 0x22,   // descriptor type 
-	//0x00D6 }  // total length of report descriptor // This one is the one originally reported by the actual hardware-- it seems that the hardware has some HID support, but I'm not sure how to coax it.
 	sizeof(ReportDescriptor) }  // total length of custom report descriptor
 };
 

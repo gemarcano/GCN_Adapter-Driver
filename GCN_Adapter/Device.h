@@ -3,7 +3,7 @@
 #define _GCN_ADAPTER_DEVICE_H_
 
 #include "Include.h"
-#include "Public.h"
+#include "GCN_Adapter.h"
 #include "GCN_Controller.h"
 
 typedef struct _DEVICE_CONTEXT
@@ -18,12 +18,16 @@ typedef struct _DEVICE_CONTEXT
 	WDFUSBPIPE interruptReadPipe;
 	WDFUSBPIPE interruptWritePipe;
 	WDFQUEUE interruptMsgQueue;
-	
-	WDFWAITLOCK resetDeviceWaitLock;
+	WDFQUEUE readQueue;
+	WDFQUEUE writeQueue;
+	WDFQUEUE otherQueue;
 
 	//Hardware state
+	WDFSPINLOCK dataLock; //for sync
 	GCN_AdapterData calibrationData;
 	GCN_AdapterData adaptorData;
+	GCN_Controller_Status controllerStatus[4];
+
 } DEVICE_CONTEXT, *PDEVICE_CONTEXT;
 
 WDF_DECLARE_CONTEXT_TYPE_WITH_NAME(DEVICE_CONTEXT, DeviceGetContext)
@@ -102,12 +106,13 @@ EVT_WDF_DEVICE_PREPARE_HARDWARE GCN_AdapterEvtDevicePrepareHardware;
 /**	Helper that sets the USB device's calibration values from current values.
  *
  *	@param [in] apDeviceContext Device context used by driver.
- *	@param [out] apMemoryDescriptor Pointer to valid WDF_MEMORYDESCRIPTOR.
+ *	@param [in] aIndex Index of port to calibrate [ 0, 3 ]. A -1 indicates to
+ *		calibrate all ports.
  *
  *	@returns NTSTATUS. @See
  *		http://msdn.microsoft.com/en-us/library/cc704588.aspx for details.
  *
  */
-NTSTATUS GCN_AdapterFetchCalibrationData(PDEVICE_CONTEXT _In_ pDeviceContext, PWDF_MEMORY_DESCRIPTOR _Out_ pMemoryDescriptor);
+NTSTATUS GCN_AdapterFetchCalibrationData(PDEVICE_CONTEXT _In_ pDeviceContext, int aIndex);
 
 #endif//_GCN_ADAPTER_DEVICE_H_

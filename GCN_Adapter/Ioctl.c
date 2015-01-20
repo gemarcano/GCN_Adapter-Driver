@@ -1,69 +1,6 @@
 #include "Include.h"
 #include "ioctl.tmh"
 
-void prepare_report(GCN_AdapterData *cal, GCN_AdapterData * in, GCN_ControllerReport * out);
-
-
-VOID GCN_AdapterUsbIoctlGetInterruptMessage(
-	_In_ WDFDEVICE aDevice,
-	_In_ NTSTATUS  aReaderStatus)
-{
-	NTSTATUS status;
-	WDFREQUEST request;
-	PDEVICE_CONTEXT pDevContext;
-	size_t bytesToCopy = 0, bytesReturned = 0;
-	GCN_AdapterData	data;
-	GCN_ControllerReport *pReport;
-
-	pDevContext = DeviceGetContext(aDevice);
-
-	status = WdfIoQueueRetrieveNextRequest(pDevContext->interruptMsgQueue, &request);
-
-	if (NT_SUCCESS(status))
-	{
-		//
-		// IOCTL_HID_READ_REPORT is METHOD_NEITHER so WdfRequestRetrieveOutputBuffer
-		// will correctly retrieve buffer from Irp->UserBuffer. Remember that
-		// HIDCLASS provides the buffer in the Irp->UserBuffer field
-		// irrespective of the ioctl buffer type. However, framework is very
-		// strict about type checking. You cannot get Irp->UserBuffer by using
-		// WdfRequestRetrieveOutputMemory if the ioctl is not a METHOD_NEITHER
-		// internal ioctl.
-
-		bytesToCopy = sizeof(GCN_ControllerReport);
-		status = WdfRequestRetrieveOutputBuffer(
-			request,
-			bytesToCopy,
-			&pReport,
-			&bytesReturned);// BufferLength
-
-		if (!NT_SUCCESS(status))
-		{
-			TraceEvents(TRACE_LEVEL_ERROR, TRACE_IOCTL,
-				"WdfRequestRetrieveOutputBuffer failed with status: 0x%x\n", status);
-		}
-		else
-		{
-			if (NT_SUCCESS(aReaderStatus))
-			{
-				prepare_report(&pDevContext->calibrationData, &pDevContext->adaptorData, pReport);
-				bytesReturned = bytesToCopy;
-			}
-			else
-			{
-				bytesReturned = 0;
-			}
-		}
-
-		WdfRequestCompleteWithInformation(request,
-			NT_SUCCESS(status) ? aReaderStatus : status, bytesReturned);
-	}
-	else if (status != STATUS_NO_MORE_ENTRIES)
-	{
-		TraceEvents(TRACE_LEVEL_ERROR, TRACE_IOCTL, "WdfIoQueueRetrieveNextRequest status %08x\n", status);
-	}
-}
-
 VOID GCN_AdapterEvtInternalDeviceControl(
 	_In_ WDFQUEUE aQueue,
 	_In_ WDFREQUEST aRequest,
@@ -164,13 +101,33 @@ VOID GCN_AdapterEvtInternalDeviceControl(
 		// the device. In the second case, an external wake event triggers completion
 		// of wait-wake irp and powering up of device.
 		//
+		status = GCN_AdapterSendIdleNotification(aRequest);
+		if (!NT_SUCCESS(status))
+		{
+			TraceEvents(TRACE_LEVEL_ERROR, TRACE_IOCTL,
+				"SendIdleNotification failed with status: 0x%x\n", status);
 
+			WdfRequestComplete(aRequest, status);
+		}
+		return;
+
+	case IOCTL_GCN_ADAPTER_CALIBRATE:
+		status = GCN_AdapterCalibrate(device, aRequest);
+		if (!NT_SUCCESS(status))
+		{
+			TraceEvents(TRACE_LEVEL_ERROR, TRACE_IOCTL,
+				"GCN_AdapterCalibrate failed with status: 0x%x\n", status);
+
+			WdfRequestComplete(aRequest, status);
+		}
+		return;
 
 	case IOCTL_HID_SET_FEATURE:
 		//
 		// This sends a HID class feature report to a top-level collection of
 		// a HID class device.
 		//
+		//We could use this for enabling rumble...
 
 
 	case IOCTL_HID_GET_FEATURE:
@@ -213,6 +170,68 @@ VOID GCN_AdapterEvtInternalDeviceControl(
 	}
 
 	WdfRequestComplete(aRequest, status);
+}
+
+//Helper IOCTL functions follow below:
+
+VOID GCN_AdapterUsbIoctlGetInterruptMessage(
+	_In_ WDFDEVICE aDevice,
+	_In_ NTSTATUS  aReaderStatus)
+{
+	NTSTATUS status;
+	WDFREQUEST request;
+	PDEVICE_CONTEXT pDevContext;
+	size_t bytesToCopy = 0, bytesReturned = 0;
+	GCN_AdapterData	data;
+	GCN_ControllerReport *pReport;
+
+	pDevContext = DeviceGetContext(aDevice);
+
+	status = WdfIoQueueRetrieveNextRequest(pDevContext->interruptMsgQueue, &request);
+
+	if (NT_SUCCESS(status))
+	{
+		//
+		// IOCTL_HID_READ_REPORT is METHOD_NEITHER so WdfRequestRetrieveOutputBuffer
+		// will correctly retrieve buffer from Irp->UserBuffer. Remember that
+		// HIDCLASS provides the buffer in the Irp->UserBuffer field
+		// irrespective of the ioctl buffer type. However, framework is very
+		// strict about type checking. You cannot get Irp->UserBuffer by using
+		// WdfRequestRetrieveOutputMemory if the ioctl is not a METHOD_NEITHER
+		// internal ioctl.
+
+		bytesToCopy = sizeof(GCN_ControllerReport);
+		status = WdfRequestRetrieveOutputBuffer(
+			request,
+			bytesToCopy,
+			&pReport,
+			&bytesReturned);// BufferLength
+
+		if (!NT_SUCCESS(status))
+		{
+			TraceEvents(TRACE_LEVEL_ERROR, TRACE_IOCTL,
+				"WdfRequestRetrieveOutputBuffer failed with status: 0x%x\n", status);
+		}
+		else
+		{
+			if (NT_SUCCESS(aReaderStatus))
+			{
+				prepare_report(pDevContext->controllerStatus, &pDevContext->calibrationData, &pDevContext->adaptorData, pReport, &pDevContext->dataLock);
+				bytesReturned = bytesToCopy;
+			}
+			else
+			{
+				bytesReturned = 0;
+			}
+		}
+
+		WdfRequestCompleteWithInformation(request,
+			NT_SUCCESS(status) ? aReaderStatus : status, bytesReturned);
+	}
+	else if (status != STATUS_NO_MORE_ENTRIES)
+	{
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_IOCTL, "WdfIoQueueRetrieveNextRequest status %08x\n", status);
+	}
 }
 
 NTSTATUS GCN_AdapterGetHidDescriptor(
@@ -390,74 +409,153 @@ NTSTATUS GCN_AdapterGetReportDescriptor(
 	return status;
 }
 
-
-DWORD32 sqrt32(DWORD64 n)
+NTSTATUS GCN_AdapterSendIdleNotification(_In_ WDFREQUEST Request)
 {
-	DWORD32 c = 0x8000;
-	DWORD32 g = 0x8000;
+	NTSTATUS                   status = STATUS_SUCCESS;
+	BOOLEAN                    sendStatus = FALSE;
+	WDF_REQUEST_SEND_OPTIONS   options;
+	WDFIOTARGET                nextLowerDriver;
+	WDFDEVICE                  device;
+	PIO_STACK_LOCATION         currentIrpStack = NULL;
+	IO_STACK_LOCATION          nextIrpStack;
 
-	for (;;) {
-		if (g*g > n)
-			g ^= c;
-		c >>= 1;
-		if (c == 0)
-			return g;
-		g |= c;
-	}
-}
+	device = WdfIoQueueGetDevice(WdfRequestGetIoQueue(Request));
+	currentIrpStack = IoGetCurrentIrpStackLocation(WdfRequestWdmGetIrp(Request));
 
-__inline double dist_from_center(double vector[2], double center[2])
-{
-	return sqrt32((DWORD64)((vector[0] - center[0])*(vector[0] - center[0]) + (vector[1] - center[1])*(vector[1] - center[1])));
-}
-
-#define DEADZONE 35
-
-__inline double scaled_value(double vector[2], double center[2], double * distance)
-{
-	*distance = dist_from_center(vector, center);
-	return (*distance - DEADZONE) / (255 - DEADZONE);
-}
-
-void null_handle_axis(BYTE axis[2], BYTE zero[2], double center[2])
-{
-	double distance;
-	if ((INT16)axis[0] > (INT16)(center[0] - DEADZONE) && (INT16)axis[0] < (INT16)(center[0] + DEADZONE) &&
-		(INT16)axis[1] > (INT16)(center[1] - DEADZONE) && (INT16)axis[1] < (INT16)(center[1] + DEADZONE))
+	//
+	// Convert the request to corresponding USB Idle notification request
+	//
+	if (currentIrpStack->Parameters.DeviceIoControl.InputBufferLength <
+		sizeof(HID_SUBMIT_IDLE_NOTIFICATION_CALLBACK_INFO))
 	{
-		memcpy(axis, zero, 2);
+
+		status = STATUS_BUFFER_TOO_SMALL;
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_IOCTL,
+			"DeviceIoControl.InputBufferLength too small, 0x%x\n", status);
+		return status;
+	}
+
+	ASSERT(sizeof(HID_SUBMIT_IDLE_NOTIFICATION_CALLBACK_INFO)
+		== sizeof(USB_IDLE_CALLBACK_INFO));
+
+	if (sizeof(HID_SUBMIT_IDLE_NOTIFICATION_CALLBACK_INFO) != sizeof(USB_IDLE_CALLBACK_INFO))
+	{
+
+		status = STATUS_INFO_LENGTH_MISMATCH;
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_IOCTL,
+			"Incorrect DeviceIoControl.InputBufferLength, 0x%x\n", status);
+		return status;
+	}
+
+	//
+	// prepare next stack location
+	//
+	RtlZeroMemory(&nextIrpStack, sizeof(IO_STACK_LOCATION));
+
+	nextIrpStack.MajorFunction = currentIrpStack->MajorFunction;
+	nextIrpStack.Parameters.DeviceIoControl.InputBufferLength =
+		currentIrpStack->Parameters.DeviceIoControl.InputBufferLength;
+	nextIrpStack.Parameters.DeviceIoControl.Type3InputBuffer =
+		currentIrpStack->Parameters.DeviceIoControl.Type3InputBuffer;
+	nextIrpStack.Parameters.DeviceIoControl.IoControlCode =
+		IOCTL_INTERNAL_USB_SUBMIT_IDLE_NOTIFICATION;
+	nextIrpStack.DeviceObject =
+		WdfIoTargetWdmGetTargetDeviceObject(WdfDeviceGetIoTarget(device));
+
+	//
+	// Format the I/O request for the driver's local I/O target by using the
+	// contents of the specified WDM I/O stack location structure.
+	//
+	WdfRequestWdmFormatUsingStackLocation(Request, &nextIrpStack);
+
+	//
+	// Send the request down using Fire and forget option.
+	//
+	WDF_REQUEST_SEND_OPTIONS_INIT(
+		&options,
+		WDF_REQUEST_SEND_OPTION_SEND_AND_FORGET);
+
+	nextLowerDriver = WdfDeviceGetIoTarget(device);
+
+	sendStatus = WdfRequestSend(Request, nextLowerDriver, &options);
+
+	if (sendStatus == FALSE)
+	{
+		status = STATUS_UNSUCCESSFUL;
+	}
+
+	return status;
+}
+
+NTSTATUS GCN_AdapterCalibrate(
+	_In_ WDFDEVICE aDevice,
+	_In_ WDFREQUEST aRequest)
+{
+	WDF_REQUEST_PARAMETERS params;
+	PUCHAR pData;
+	PDEVICE_CONTEXT devContext = DeviceGetContext(aDevice);
+	NTSTATUS status = STATUS_SUCCESS;
+	UCHAR i;
+
+	PAGED_CODE();
+
+	TraceEvents(TRACE_LEVEL_VERBOSE, TRACE_IOCTL, "!FUNC! Enter\n");
+
+	WDF_REQUEST_PARAMETERS_INIT(&params);
+	WdfRequestGetParameters(aRequest, &params);
+
+	//
+	// IOCTL_HID_SET_FEATURE & IOCTL_HID_GET_FEATURE are not METHOD_NIEHTER
+	// IOCTLs. So you cannot retreive UserBuffer from the IRP using Wdf
+	// function. As a result we have to escape out to WDM to get the UserBuffer
+	// directly from the IRP. 
+	//
+	if (params.Parameters.DeviceIoControl.InputBufferLength < 1) {
+		status = STATUS_BUFFER_TOO_SMALL;
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_IOCTL,
+			"Userbuffer is small 0x%x\n", status);
+		return status;
+	}
+
+	//
+	// This is a kernel buffer so no need for try/except block when accesssing
+	// Irp->UserBuffer.
+	//
+	pData = WdfRequestWdmGetIrp(aRequest)->AssociatedIrp.SystemBuffer;
+	if (pData == NULL) {
+		status = STATUS_INVALID_DEVICE_REQUEST;
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_IOCTL,
+			"Irp->UserBuffer is NULL 0x%x\n", status);
+		return status;
+	}
+
+	if ((0x0f & *pData) == 0x0f)
+	{
+		status = GCN_AdapterFetchCalibrationData(devContext, -1);
 	}
 	else
 	{
-		double newAxis[2] = { axis[0], axis[1] };
-		double newMagnitude = scaled_value(newAxis, center, &distance);
-		axis[0] = (BYTE)(255 * newMagnitude * (newAxis[0]-center[0]) / distance + center[0]);
-		axis[1] = (BYTE)(255 * newMagnitude * (newAxis[1]-center[1]) / distance + center[1]);
+		status = STATUS_SUCCESS;
+		for (i = 0; i < 4 && NT_SUCCESS(status); ++i)
+		{
+			if ((1 << i) & *pData)
+			{
+				status = GCN_AdapterFetchCalibrationData(devContext, i);
+			}
+		}
 	}
-}
-
-//This needs to cycle through the 4 controllers
-void prepare_report(GCN_AdapterData *cal, GCN_AdapterData * in, GCN_ControllerReport * out)
-{
-	static BYTE id = 1;
-	double center[2][2] = { { 127, 127 }, { 0, 0 } };
-
-	if (!in->Port[id - 1].Status.type)
-	{
-		memcpy(out, &GCN_AdapterControllerZero, sizeof(*out));
-	}
-	else
-	{
-		memcpy(&(out->Buttons1), &(in->Port[id - 1].Buttons1), 8);
-	}
-	out->id = id;
 	
-	out->LeftAxis.Y = ~out->LeftAxis.Y;
+	if (!NT_SUCCESS(status))
+	{
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_IOCTL,
+			"Calibration failed with status: 0x%x\n", status);
+	}
+	else
+	{
+		WdfRequestSetInformation(aRequest, 0);
+		WdfRequestComplete(aRequest, status);
+	}
 
-	//Handle null zones
-	null_handle_axis((BYTE *)&out->LeftAxis, (BYTE *)&GCN_AdapterControllerZero.LeftAxis, center[0]);
-	null_handle_axis((BYTE *)&out->RightAxis, (BYTE *)&GCN_AdapterControllerZero.RightAxis, center[0]);
-	null_handle_axis((BYTE *)&out->ShoulderAxis, (BYTE *)&GCN_AdapterControllerZero.ShoulderAxis, center[1]);
-
-	id = (id % 4) + 1;
+	TraceEvents(TRACE_LEVEL_VERBOSE, TRACE_IOCTL, "!FUNC! Exit\n");
+	return status;
 }

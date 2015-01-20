@@ -66,4 +66,18 @@ NTSTATUS GCN_AdapterGetReportDescriptor(
  */
 EVT_WDF_IO_QUEUE_IO_INTERNAL_DEVICE_CONTROL GCN_AdapterEvtInternalDeviceControl;
 
+/**	Passes down Idle notification request to the lower driver.
+ *
+ *	@param [in] aRequest Request received with IOCTL information.
+ *
+ *	@returns NTSTATUS. @See
+ *		http://msdn.microsoft.com/en-us/library/cc704588.aspx for details.
+ *
+ */
+NTSTATUS GCN_AdapterSendIdleNotification(_In_ WDFREQUEST aRequest);
+
+NTSTATUS GCN_AdapterCalibrate(
+	_In_ WDFDEVICE aDevice,
+	_In_ WDFREQUEST aRequest);
+
 #endif//_GCN_ADAPTER_IOCTL_H_

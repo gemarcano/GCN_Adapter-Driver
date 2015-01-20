@@ -43,6 +43,7 @@ NTSTATUS GCN_AdapterQueueInitialize(_In_ WDFDEVICE aDevice)
     WDF_IO_QUEUE_CONFIG_INIT_DEFAULT_QUEUE(&queueConfig, WdfIoQueueDispatchParallel);
 
 	queueConfig.EvtIoInternalDeviceControl = GCN_AdapterEvtInternalDeviceControl;
+	queueConfig.EvtIoDeviceControl = GCN_AdapterEvtInternalDeviceControl;
     queueConfig.EvtIoStop = GCN_AdapterEvtIoStop;
 
     status = WdfIoQueueCreate(
@@ -57,6 +58,9 @@ NTSTATUS GCN_AdapterQueueInitialize(_In_ WDFDEVICE aDevice)
         TraceEvents(TRACE_LEVEL_ERROR, TRACE_QUEUE, "WdfIoQueueCreate failed %!STATUS!", status);
 		goto Error;
     }
+
+	pDevContext = DeviceGetContext(aDevice);
+	pDevContext->otherQueue = queue;
 
 	//
 	// We will create a separate sequential queue and configure it
@@ -96,6 +100,8 @@ NTSTATUS GCN_AdapterQueueInitialize(_In_ WDFDEVICE aDevice)
 		goto Error;
 	}
 
+	pDevContext->readQueue = queue;
+
 	//
 	// We will create another sequential queue and configure it
 	// to receive write requests.
@@ -131,6 +137,8 @@ NTSTATUS GCN_AdapterQueueInitialize(_In_ WDFDEVICE aDevice)
 		goto Error;
 	}
 
+	pDevContext->writeQueue = queue;
+
 	//
 	// Register a manual I/O queue for handling Interrupt Message Read Requests.
 	// This queue will be used for storing Requests that need to wait for an
@@ -147,20 +155,11 @@ NTSTATUS GCN_AdapterQueueInitialize(_In_ WDFDEVICE aDevice)
 	//
 	queueConfig.PowerManaged = WdfFalse;
 
-	pDevContext = DeviceGetContext(aDevice);
-
 	status = WdfIoQueueCreate(
 		aDevice,
 		&queueConfig,
 		WDF_NO_OBJECT_ATTRIBUTES,
 		&pDevContext->interruptMsgQueue);
-
-	if (!NT_SUCCESS(status))
-	{
-		TraceEvents(TRACE_LEVEL_ERROR, TRACE_QUEUE,
-			"WdfIoQueueCreate failed 0x%x\n", status);
-		goto Error;
-	}
 
 	return status;
 

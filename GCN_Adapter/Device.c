@@ -1,6 +1,5 @@
 #include "Include.h"
 #include "device.tmh"
-#include "Public.h"
 
 #ifdef ALLOC_PRAGMA
 #pragma alloc_text (PAGE, GCN_AdapterCreateDevice)
@@ -18,6 +17,7 @@ NTSTATUS GCN_AdapterCreateDevice(
 	WDFDEVICE device;
 	NTSTATUS status;
 	WDF_DEVICE_PNP_CAPABILITIES pnpCaps;
+	UNICODE_STRING deviceInterface;
 
 	PAGED_CODE();
 
@@ -51,15 +51,15 @@ NTSTATUS GCN_AdapterCreateDevice(
 	// Create a device interface so that applications can find and talk
 	// to us.
 	//
-	status = WdfDeviceCreateDeviceInterface(
+	/*status = WdfDeviceCreateDeviceInterface(
 		device,
-		&GUID_DEVINTERFACE_GCN_Adapter,
+		&GUID_DEVINTERFACE_GCN_ADAPTER,
 		NULL); // ReferenceString
 
 	if (!NT_SUCCESS(status))
 	{
 		goto Error;
-	}
+	}*/
 	
 	status = GCN_AdapterQueueInitialize(device);
 	if (!NT_SUCCESS(status))
@@ -191,7 +191,16 @@ NTSTATUS GCN_AdapterEvtDevicePrepareHardware(
 	}
 
 	//Fetch calibration data
-	GCN_AdapterFetchCalibrationData(pDeviceContext, &memoryDescriptor);
+	GCN_AdapterFetchCalibrationData(pDeviceContext, -1);
+
+	//Initialize controller status
+	GCN_Controller_Status_Init(&pDeviceContext->controllerStatus[0]);
+	GCN_Controller_Status_Init(&pDeviceContext->controllerStatus[1]);
+	GCN_Controller_Status_Init(&pDeviceContext->controllerStatus[2]);
+	GCN_Controller_Status_Init(&pDeviceContext->controllerStatus[3]);
+
+	//Initialize spinlock for data synchronization
+	WdfSpinLockCreate(&attributes, &pDeviceContext->dataLock); //Attributes is already initialized to use the device as the parent object
 
 	//
 	// Enable wait-wake and idle timeout if the device supports it (Filter HID does not support this?)
@@ -206,6 +215,8 @@ NTSTATUS GCN_AdapterEvtDevicePrepareHardware(
 	}*/
 
 	status = GCN_AdapterConfigContReaderForInterruptEndPoint(pDeviceContext);
+
+	GCN_Adapter_CreateRawPdo(aDevice, 0);
 
 	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_DRIVER, "%!FUNC! Exit");
 
@@ -348,13 +359,14 @@ VOID GCN_AdapterEvtDeviceSelfManagedIoFlush(
 	GCN_AdapterUsbIoctlGetInterruptMessage(aDevice, STATUS_DEVICE_REMOVED);
 }
 
-NTSTATUS GCN_AdapterFetchCalibrationData(PDEVICE_CONTEXT _In_ apDeviceContext, PWDF_MEMORY_DESCRIPTOR _Out_ apMemoryDescriptor)
+NTSTATUS GCN_AdapterFetchCalibrationData(PDEVICE_CONTEXT _In_ apDeviceContext, int _In_ aIndex)
 {
 	NTSTATUS status;
 	GCN_AdapterData calibrationData;
+	WDF_MEMORY_DESCRIPTOR memDesc;
 
-	WDF_MEMORY_DESCRIPTOR_INIT_BUFFER(apMemoryDescriptor, &calibrationData, sizeof(calibrationData));
-	status = WdfUsbTargetPipeReadSynchronously(apDeviceContext->interruptReadPipe, NULL, NULL, apMemoryDescriptor, NULL);
+	WDF_MEMORY_DESCRIPTOR_INIT_BUFFER(&memDesc, &calibrationData, sizeof(calibrationData));
+	status = WdfUsbTargetPipeReadSynchronously(apDeviceContext->interruptReadPipe, NULL, NULL, &memDesc, NULL);
 	if (!NT_SUCCESS(status))
 	{
 		TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE,
@@ -362,6 +374,20 @@ NTSTATUS GCN_AdapterFetchCalibrationData(PDEVICE_CONTEXT _In_ apDeviceContext, P
 		return status;
 	}
 
-	apDeviceContext->calibrationData = calibrationData;
+	if (aIndex < 0)
+	{
+		apDeviceContext->calibrationData = calibrationData;
+	}
+	else if (aIndex < 4)
+	{
+		apDeviceContext->calibrationData.Port[aIndex] = calibrationData.Port[aIndex];
+	}
+	else
+	{
+		status = STATUS_BUFFER_OVERFLOW;
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE,
+			"!FUNC! bad index received! %!STATUS!\n", status);
+	}
+
 	return status;
 }

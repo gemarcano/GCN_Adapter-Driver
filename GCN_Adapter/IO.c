@@ -33,8 +33,9 @@ VOID GCN_AdapterEvtIoRead(
 		goto Exit;
 	}
 
-	//FIXME TODO This probably needs to be synchronized with continuous reader
+	WdfSpinLockAcquire(pDeviceContext->dataLock);
 	memcpy(WdfMemoryGetBuffer(reqMemory, NULL), &pDeviceContext->adaptorData, Length);
+	WdfSpinLockRelease(pDeviceContext->dataLock);
 
 	WdfRequestCompleteWithInformation(Request, status, Length);
 

@@ -27,7 +27,7 @@ NTSTATUS DriverEntry(
 	attributes.EvtCleanupCallback = GCN_AdapterEvtDriverContextCleanup;
 
 	WDF_DRIVER_CONFIG_INIT(&config, GCN_AdapterEvtDeviceAdd);
-
+	
 	status = WdfDriverCreate(
 		aDriverObject,
 		aRegistryPath,
@@ -64,8 +64,16 @@ NTSTATUS GCN_AdapterEvtDeviceAdd(
 
 	status = GCN_AdapterCreateDevice(aDeviceInit);
 
-	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_DRIVER, "%!FUNC! Exit");
+	if (status != STATUS_SUCCESS)
+	{
+		TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_DRIVER,
+			"GCN_AdapterCreateDevice failed!: %!STATUS! Exit", status);
+		goto Exit;
+	}
 
+Exit:
+
+	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_DRIVER, "%!FUNC! Exit");
 	return status;
 }
 

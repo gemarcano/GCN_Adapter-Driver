@@ -33,9 +33,6 @@
     <ClInclude Include="Driver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Public.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Queue.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -61,6 +58,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="GCN_Controller.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GCN_Adapter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GCN_Interface.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -90,6 +93,12 @@
       <Filter>Source Files\Driver</Filter>
     </ClCompile>
     <ClCompile Include="GCN_Controller.c">
+      <Filter>Source Files\Driver</Filter>
+    </ClCompile>
+    <ClCompile Include="GCN_Adapter.c">
+      <Filter>Source Files\Driver</Filter>
+    </ClCompile>
+    <ClCompile Include="GCN_Interface.c">
       <Filter>Source Files\Driver</Filter>
     </ClCompile>
   </ItemGroup>
