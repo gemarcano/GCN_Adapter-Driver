@@ -216,7 +216,7 @@ VOID GCN_AdapterUsbIoctlGetInterruptMessage(
 		{
 			if (NT_SUCCESS(aReaderStatus))
 			{
-				prepare_report(pDevContext->controllerStatus, &pDevContext->calibrationData, &pDevContext->adaptorData, pReport, &pDevContext->dataLock);
+				prepare_report(pDevContext, &pDevContext->adaptorData, pReport);
 				bytesReturned = bytesToCopy;
 			}
 			else

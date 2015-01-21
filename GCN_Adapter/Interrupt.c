@@ -65,7 +65,9 @@ VOID GCN_AdapterEvtUsbInterruptPipeReadComplete(
 	NT_ASSERT(aNumBytesTransferred == 37); //Number of bytes coming in from the device
 	NT_ASSERT(aNumBytesTransferred == sizeof(pDeviceContext->adaptorData));
 
+	WdfSpinLockAcquire(pDeviceContext->dataLock);
 	memcpy(&pDeviceContext->adaptorData, WdfMemoryGetBuffer(aBuffer, NULL), aNumBytesTransferred);
+	WdfSpinLockRelease(pDeviceContext->dataLock);
 
 	TraceEvents(TRACE_LEVEL_VERBOSE, TRACE_INTERRUPT,
 		"GCN_AdapterEvtUsbInterruptPipeReadComplete matched: %x\n",

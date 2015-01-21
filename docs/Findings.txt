@@ -1,0 +1,1 @@
+The x-y-start combo used for re-calibration on the Gamecube actually causes the controller to appear disconnected in the USB stream. It's type goes to zero after 3 or so seconds. It seems Nintendo is using the disconnect-reconnect calibration code for the three-button calibration as well (just detect when the controller is disconnected, and reconnected, and calibrate then).

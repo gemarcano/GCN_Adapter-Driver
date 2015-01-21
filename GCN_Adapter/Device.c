@@ -91,6 +91,7 @@ NTSTATUS GCN_AdapterEvtDevicePrepareHardware(
 
 	WDF_USB_CONTROL_SETUP_PACKET setup_packet;
 	GCN_AdapterData calibrationData;
+	WDF_TIMER_CONFIG timerConfig;
 
 	UNREFERENCED_PARAMETER(aResourceList);
 	UNREFERENCED_PARAMETER(aResourceListTranslated);
@@ -190,6 +191,9 @@ NTSTATUS GCN_AdapterEvtDevicePrepareHardware(
 		return status;
 	}
 
+	//Initialize spinlock for data synchronization
+	WdfSpinLockCreate(&attributes, &pDeviceContext->dataLock); //Attributes is already initialized to use the device as the parent object
+
 	//Fetch calibration data
 	GCN_AdapterFetchCalibrationData(pDeviceContext, -1);
 
@@ -198,9 +202,6 @@ NTSTATUS GCN_AdapterEvtDevicePrepareHardware(
 	GCN_Controller_Status_Init(&pDeviceContext->controllerStatus[1]);
 	GCN_Controller_Status_Init(&pDeviceContext->controllerStatus[2]);
 	GCN_Controller_Status_Init(&pDeviceContext->controllerStatus[3]);
-
-	//Initialize spinlock for data synchronization
-	WdfSpinLockCreate(&attributes, &pDeviceContext->dataLock); //Attributes is already initialized to use the device as the parent object
 
 	//
 	// Enable wait-wake and idle timeout if the device supports it (Filter HID does not support this?)
@@ -361,18 +362,12 @@ VOID GCN_AdapterEvtDeviceSelfManagedIoFlush(
 
 NTSTATUS GCN_AdapterFetchCalibrationData(PDEVICE_CONTEXT _In_ apDeviceContext, int _In_ aIndex)
 {
-	NTSTATUS status;
+	NTSTATUS status;	
 	GCN_AdapterData calibrationData;
-	WDF_MEMORY_DESCRIPTOR memDesc;
 
-	WDF_MEMORY_DESCRIPTOR_INIT_BUFFER(&memDesc, &calibrationData, sizeof(calibrationData));
-	status = WdfUsbTargetPipeReadSynchronously(apDeviceContext->interruptReadPipe, NULL, NULL, &memDesc, NULL);
-	if (!NT_SUCCESS(status))
-	{
-		TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE,
-			"WdfUsbTargetPipeReadSynchronously failed (Init device) %!STATUS!\n", status);
-		return status;
-	}
+	WdfSpinLockAcquire(apDeviceContext->dataLock);
+	calibrationData = apDeviceContext->adaptorData;
+	WdfSpinLockRelease(apDeviceContext->dataLock);
 
 	if (aIndex < 0)
 	{

@@ -4,7 +4,7 @@
 #define DEADZONE 35
 
 GCN_Controller_Status GCN_Controller_Status_Zero =
-	{ { DEADZONE / 255., DEADZONE / 255. }, { DEADZONE / 255., DEADZONE / 255. }, { linear_handle_axis, linear_handle_axis }, { linear_handle_shoulder, linear_handle_shoulder } };
+	{ 0, { DEADZONE / 255., DEADZONE / 255. }, { DEADZONE / 255., DEADZONE / 255. }, { linear_handle_axis, linear_handle_axis }, { linear_handle_shoulder, linear_handle_shoulder } };
 
 void GCN_Controller_Status_Init(GCN_Controller_Status *aControllerStatus)
 {
@@ -125,15 +125,15 @@ void linear_handle_shoulder(BYTE *axis, BYTE zero, double center)
 
 //This needs to cycle through the 4 controllers
 void prepare_report(
-	GCN_Controller_Status aStatus[4],
-	GCN_AdapterData *cal,
+	PDEVICE_CONTEXT apDeviceContext,
 	GCN_AdapterData *in,
-	GCN_ControllerReport *out,
-	WDFSPINLOCK *lock)
+	GCN_ControllerReport *out)
 {
 	//ID should loop from 1 to 4, inclusive ( [1, 4] )
 	static BYTE id = 1;
-	GCN_Controller_Status status = aStatus[id - 1];
+	GCN_Controller_Status status = apDeviceContext->controllerStatus[id - 1];
+	GCN_AdapterData *cal = &apDeviceContext->calibrationData;
+	WDFSPINLOCK *lock = &apDeviceContext->dataLock;
 
 	double center[3][2] =
 	{
@@ -145,6 +145,10 @@ void prepare_report(
 	if (!in->Port[id - 1].Status.type)
 	{
 		memcpy(out, &GCN_AdapterControllerZero, sizeof(*out));
+		if (apDeviceContext->controllerStatus[id - 1].lastStatus)
+		{
+			apDeviceContext->controllerStatus[id - 1].lastStatus = 0;
+		}
 	}
 	else
 	{
@@ -158,7 +162,15 @@ void prepare_report(
 		status.function_axis[1]((BYTE *)&out->Buttons.RightAxis, (BYTE *)&GCN_AdapterControllerZero.Buttons.RightAxis, center[1]);
 		status.function_shoulder[0](&out->Buttons.ShoulderAxis.left, GCN_AdapterControllerZero.Buttons.ShoulderAxis.left, center[2][0]);
 		status.function_shoulder[1](&out->Buttons.ShoulderAxis.right, GCN_AdapterControllerZero.Buttons.ShoulderAxis.right, center[2][1]);
+
+		if (!apDeviceContext->controllerStatus[id - 1].lastStatus)
+		{
+			GCN_AdapterFetchCalibrationData(apDeviceContext, id - 1);
+			apDeviceContext->controllerStatus[id - 1].lastStatus = 1;
+		}
 	}
+
+	
 
 	out->id = id;
 	id = (id % 4) + 1;

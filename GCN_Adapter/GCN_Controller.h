@@ -2,8 +2,7 @@
 #ifndef _GCN_ADAPTOR_GCN_CONTROLLER_H_
 #define _GCN_ADAPTOR_GCN_CONTROLLER_H_
 
-#include <ntddk.h>
-#include <wdf.h>
+#include "Device.h"
 
 typedef struct _GCN_Controller_Port_Buttons
 {
@@ -89,6 +88,7 @@ static void linear_handle_axis(BYTE axis[2], BYTE zero[2], double center[2]);
 
 typedef struct _GCN_Controller_Status
 {
+	BYTE lastStatus;
 	double axis_sensitivity[GCN_Controller_Axis_SIZE];
 	double shoulder_sensitivity[GCN_Controller_Shoulder_SIZE];
 
@@ -97,13 +97,6 @@ typedef struct _GCN_Controller_Status
 
 } GCN_Controller_Status;
 
-void prepare_report(
-	GCN_Controller_Status aStatus[4],
-	GCN_AdapterData *cal,
-	GCN_AdapterData *in,
-	GCN_ControllerReport *out,
-	WDFSPINLOCK *lock);
-
 void GCN_Controller_Status_Init(GCN_Controller_Status *aControllerStatus);
 void GCN_Controller_Change_Null_Control(GCN_Controller_Status *aStatus, enum GCN_Controller_Null_Control aEnum);
 void GCN_Controller_Change_Null_Control_Axis(GCN_Controller_Status *aStatus, enum GCN_Controller_Axis aAxis, enum GCN_Controller_Null_Control aEnum);
@@ -111,5 +104,13 @@ void GCN_Controller_Change_Null_Control_Shoulder(GCN_Controller_Status *aStatus,
 void GCN_Controller_Change_Sensitivity_Control(GCN_Controller_Status *aStatus, BYTE aSensitivity);
 void GCN_Controller_Change_Sensitivity_Control_Axis(GCN_Controller_Status *aStatus, enum GCN_Controller_Axis aAxis, BYTE aSensitivity);
 void GCN_Controller_Change_Sensitivity_Control_Shoulder(GCN_Controller_Status *aStatus, enum GCN_Controller_Shoulder aShoulder, BYTE aSensitivity);
+
+struct _DEVICE_CONTEXT;
+typedef struct _DEVICE_CONTEXT DEVICE_CONTEXT;
+
+void prepare_report(
+	DEVICE_CONTEXT *apDeviceContext,
+	GCN_AdapterData *in,
+	GCN_ControllerReport *out);
 
 #endif//_GCN_ADAPTOR_GCN_CONTROLLER_H_
