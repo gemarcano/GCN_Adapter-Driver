@@ -6,6 +6,7 @@
 #pragma alloc_text (PAGE, GCN_AdapterEvtDevicePrepareHardware)
 #pragma alloc_text (PAGE, SelectInterfaces)
 #pragma alloc_text (PAGE, GCN_AdapterSetPowerPolicy)
+#pragma alloc_text (PAGE, GCN_AdapterQueueInitialize)
 #endif
 
 NTSTATUS GCN_AdapterCreateDevice(
@@ -71,7 +72,13 @@ NTSTATUS GCN_AdapterCreateDevice(
 
 	//Initialize rumble support data
 	WdfRequestCreate(&deviceAttributes, NULL, &deviceContext->rumbleRequest);
-	WdfMemoryCreate(&deviceAttributes, NonPagedPool, 0, 5, &deviceContext->rumbleMemory, NULL);
+	WdfMemoryCreate(
+		&deviceAttributes,
+		NonPagedPool,
+		0,
+		5,
+		&deviceContext->rumbleMemory,
+		NULL);
 
 	((BYTE*)(WdfMemoryGetBuffer(deviceContext->rumbleMemory, NULL)))[0] = 0x11;
 
@@ -104,7 +111,7 @@ NTSTATUS GCN_AdapterEvtDevicePrepareHardware(
 
 	PAGED_CODE();
 
-	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_DRIVER, "%!FUNC! Entry");
+	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_DEVICE, "%!FUNC! Entry");
 
 	status = STATUS_SUCCESS;
 	pDeviceContext = DeviceGetContext(aDevice);
@@ -195,13 +202,13 @@ NTSTATUS GCN_AdapterEvtDevicePrepareHardware(
 	}
 
 	//Fetch calibration data
-	GCN_AdapterFetchCalibrationData(pDeviceContext, -1);
+	GCN_Controller_Calibrate(pDeviceContext, -1);
 
 	status = GCN_AdapterConfigContReaderForInterruptEndPoint(pDeviceContext);
 
 	GCN_Adapter_CreateRawPdo(aDevice, 0);
 
-	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_DRIVER, "%!FUNC! Exit");
+	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_DEVICE, "%!FUNC! Exit");
 
 	return status;
 }
@@ -342,29 +349,143 @@ VOID GCN_AdapterEvtDeviceSelfManagedIoFlush(
 	GCN_AdapterUsbIoctlGetInterruptMessage(aDevice, STATUS_DEVICE_REMOVED);
 }
 
-NTSTATUS GCN_AdapterFetchCalibrationData(PDEVICE_CONTEXT _In_ apDeviceContext, int _In_ aIndex)
+NTSTATUS GCN_AdapterQueueInitialize(_In_ WDFDEVICE aDevice)
 {
-	NTSTATUS status = STATUS_SUCCESS;	
-	GCN_AdapterData calibrationData;
+	WDFQUEUE queue;
+	NTSTATUS status;
+	WDF_IO_QUEUE_CONFIG queueConfig;
+	PDEVICE_CONTEXT pDevContext;
 
-	WdfSpinLockAcquire(apDeviceContext->dataLock);
-	calibrationData = apDeviceContext->adapterData;
-	WdfSpinLockRelease(apDeviceContext->dataLock);
+	PAGED_CODE();
 
-	if (aIndex < 0)
+	//
+	// Configure a default queue so that requests that are not
+	// configure-fowarded using WdfDeviceConfigureRequestDispatching to go to
+	// other queues get dispatched here.
+	//
+	WDF_IO_QUEUE_CONFIG_INIT_DEFAULT_QUEUE(&queueConfig, WdfIoQueueDispatchParallel);
+
+	queueConfig.EvtIoInternalDeviceControl = GCN_AdapterEvtInternalDeviceControl;
+	queueConfig.EvtIoDeviceControl = GCN_AdapterEvtInternalDeviceControl;
+	queueConfig.EvtIoStop = GCN_AdapterEvtIoStop;
+
+	status = WdfIoQueueCreate(
+		aDevice,
+		&queueConfig,
+		WDF_NO_OBJECT_ATTRIBUTES,
+		&queue);
+
+	if (!NT_SUCCESS(status))
 	{
-		apDeviceContext->calibrationData = calibrationData;
-	}
-	else if (aIndex < 4)
-	{
-		apDeviceContext->calibrationData.Port[aIndex] = calibrationData.Port[aIndex];
-	}
-	else
-	{
-		status = STATUS_BUFFER_OVERFLOW;
 		TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE,
-			"!FUNC! bad index received! %!STATUS!\n", status);
+			"WdfIoQueueCreate failed %!STATUS!", status);
+		goto Error;
 	}
 
+	pDevContext = DeviceGetContext(aDevice);
+	pDevContext->otherQueue = queue;
+
+	//
+	// We will create a separate sequential queue and configure it
+	// to receive read requests.  We also need to register a EvtIoStop
+	// handler so that we can acknowledge requests that are pending
+	// at the target driver.
+	//
+	WDF_IO_QUEUE_CONFIG_INIT(&queueConfig, WdfIoQueueDispatchSequential);
+
+	queueConfig.EvtIoRead = GCN_AdapterEvtIoRead;
+	queueConfig.EvtIoStop = GCN_AdapterEvtIoStop;
+
+	status = WdfIoQueueCreate(
+		aDevice,
+		&queueConfig,
+		WDF_NO_OBJECT_ATTRIBUTES,
+		&queue); // queue handle
+
+	if (!NT_SUCCESS(status))
+	{
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE,
+			"WdfIoQueueCreate failed 0x%x\n", status);
+		goto Error;
+	}
+
+	status = WdfDeviceConfigureRequestDispatching(
+		aDevice,
+		queue,
+		WdfRequestTypeRead);
+
+	if (!NT_SUCCESS(status))
+	{
+		NT_ASSERT(NT_SUCCESS(status));
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE,
+			"WdfDeviceConfigureRequestDispatching failed 0x%x\n", status);
+		goto Error;
+	}
+
+	pDevContext->readQueue = queue;
+
+	//
+	// We will create another sequential queue and configure it
+	// to receive write requests.
+	//
+	WDF_IO_QUEUE_CONFIG_INIT(&queueConfig, WdfIoQueueDispatchSequential);
+
+	queueConfig.EvtIoWrite = GCN_AdapterEvtIoWrite;
+	queueConfig.EvtIoStop = GCN_AdapterEvtIoStop;
+
+	status = WdfIoQueueCreate(
+		aDevice,
+		&queueConfig,
+		WDF_NO_OBJECT_ATTRIBUTES,
+		&queue); // queue handle
+
+	if (!NT_SUCCESS(status))
+	{
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE,
+			"WdfIoQueueCreate failed 0x%x\n", status);
+		goto Error;
+	}
+
+	status = WdfDeviceConfigureRequestDispatching(
+		aDevice,
+		queue,
+		WdfRequestTypeWrite);
+
+	if (!NT_SUCCESS(status))
+	{
+		NT_ASSERT(NT_SUCCESS(status));
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE,
+			"WdfDeviceConfigureRequestDispatching failed 0x%x\n", status);
+		goto Error;
+	}
+
+	pDevContext->writeQueue = queue;
+
+	//
+	// Register a manual I/O queue for handling Interrupt Message Read Requests.
+	// This queue will be used for storing Requests that need to wait for an
+	// interrupt to occur before they can be completed.
+	//
+	WDF_IO_QUEUE_CONFIG_INIT(&queueConfig, WdfIoQueueDispatchManual);
+
+	//
+	// This queue is used for requests that dont directly access the device. The
+	// requests in this queue are serviced only when the device is in a fully
+	// powered state and sends an interrupt. So we can use a non-power managed
+	// queue to park the requests since we dont care whether the device is idle
+	// or fully powered up.
+	//
+	queueConfig.PowerManaged = WdfFalse;
+
+	status = WdfIoQueueCreate(
+		aDevice,
+		&queueConfig,
+		WDF_NO_OBJECT_ATTRIBUTES,
+		&pDevContext->interruptMsgQueue);
+
+	return status;
+
+Error:
+	//FIXME do something like tracing?
 	return status;
 }

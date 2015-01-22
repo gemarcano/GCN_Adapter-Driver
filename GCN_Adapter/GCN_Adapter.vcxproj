@@ -61,7 +61,6 @@
     <ClCompile Include="IO.c" />
     <ClCompile Include="Ioctl.c" />
     <ClCompile Include="Power.c" />
-    <ClCompile Include="Queue.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Device.h" />
@@ -75,7 +74,6 @@
     <ClInclude Include="Ioctl.h" />
     <ClInclude Include="Power.h" />
     <ClInclude Include="GCN_Adapter.h" />
-    <ClInclude Include="Queue.h" />
     <ClInclude Include="Trace.h" />
   </ItemGroup>
   <ItemGroup>

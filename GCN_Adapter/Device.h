@@ -6,6 +6,8 @@
 #include "GCN_Adapter.h"
 #include "GCN_Controller.h"
 
+//TODO Support more than one device!
+
 typedef struct _DEVICE_CONTEXT
 {
 	//USB Level
@@ -105,16 +107,13 @@ EVT_WDF_DEVICE_SELF_MANAGED_IO_FLUSH GCN_AdapterEvtDeviceSelfManagedIoFlush;
  */
 EVT_WDF_DEVICE_PREPARE_HARDWARE GCN_AdapterEvtDevicePrepareHardware;
 
-/**	Helper that sets the USB device's calibration values from current values.
- *
- *	@param [in] apDeviceContext Device context used by driver.
- *	@param [in] aIndex Index of port to calibrate [ 0, 3 ]. A -1 indicates to
- *		calibrate all ports.
- *
- *	@returns NTSTATUS. @See
- *		http://msdn.microsoft.com/en-us/library/cc704588.aspx for details.
- *
- */
-NTSTATUS GCN_AdapterFetchCalibrationData(PDEVICE_CONTEXT _In_ pDeviceContext, int aIndex);
+/**	Initializes driver's queues. (TODO how?)
+*
+*	@param [in] aDevice USB Device created by GCN_AdapterCreateDevice.
+*
+*	@returns NTSTATUS. @See
+*		http://msdn.microsoft.com/en-us/library/cc704588.aspx for details.
+*/
+NTSTATUS GCN_AdapterQueueInitialize(_In_ WDFDEVICE aDevice);
 
 #endif//_GCN_ADAPTER_DEVICE_H_

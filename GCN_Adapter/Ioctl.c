@@ -555,7 +555,7 @@ NTSTATUS GCN_AdapterCalibrate(
 
 	if ((0x0f & *pData) == 0x0f)
 	{
-		status = GCN_AdapterFetchCalibrationData(devContext, -1);
+		status = GCN_Controller_Calibrate(devContext, -1);
 	}
 	else
 	{
@@ -564,7 +564,7 @@ NTSTATUS GCN_AdapterCalibrate(
 		{
 			if ((1 << i) & *pData)
 			{
-				status = GCN_AdapterFetchCalibrationData(devContext, i);
+				status = GCN_Controller_Calibrate(devContext, i);
 			}
 		}
 	}

@@ -2,74 +2,9 @@
 #ifndef _GCN_ADAPTOR_GCN_CONTROLLER_H_
 #define _GCN_ADAPTOR_GCN_CONTROLLER_H_
 
-#include "Device.h"
+#include "Include.h"
 
-typedef struct _GCN_Controller_Port_Buttons
-{
-	struct {
-		BYTE a : 1;
-		BYTE b : 1;
-		BYTE x : 1;
-		BYTE y : 1;
-		BYTE d_left : 1;
-		BYTE d_right : 1;
-		BYTE d_down : 1;
-		BYTE d_up : 1;
-	} Buttons1;
-	struct {
-		BYTE start : 1;
-		BYTE z : 1;
-		BYTE r : 1;
-		BYTE l : 1;
-		BYTE: 4;
-	} Buttons2;
-	struct {
-		BYTE X, Y;
-	} LeftAxis;
-
-	struct {
-		BYTE X, Y;
-	} RightAxis;
-
-	struct {
-		BYTE left, right;
-	} ShoulderAxis;
-} GCN_Controller_Port_Buttons;
-
-typedef struct _GCN_AdapterData
-{
-	BYTE Signal;
-
-	struct {
-		struct
-		{
-			BYTE:2;
-			BYTE powered : 1;
-			BYTE:1;
-			BYTE type : 2;
-			BYTE:2;
-		} Status;
-		GCN_Controller_Port_Buttons Buttons;
-	}Port[4];
-} GCN_AdapterData;
-
-typedef struct _GCN_ControllerReport
-{
-	BYTE id;
-	GCN_Controller_Port_Buttons Buttons;
-} GCN_ControllerReport;
-
-typedef struct _GCN_AdapterReport
-{
-	GCN_ControllerReport Port[4];
-} GCN_AdapterReport;
-
-extern GCN_ControllerReport GCN_AdapterControllerZero;
-
-enum GCN_Controller_Null_Control
-{
-	GCN_Controller_Null_NONE = 0, GCN_Controller_Null_LINEAR = 1
-};
+typedef struct _DEVICE_CONTEXT DEVICE_CONTEXT;
 
 enum GCN_Controller_Axis
 {
@@ -81,11 +16,82 @@ enum GCN_Controller_Shoulder
 	GCN_Controller_Shoulder_Left = 0, GCN_Controller_Shoulder_Right = 1, GCN_Controller_Shoulder_SIZE = 2
 };
 
-typedef IOCTL_GCN_Adapter_Deadzone_Controller_Data GCN_Controller_Deadzone_Status;
+//Describes the incoming data for the controller
+typedef struct _GCN_Controller_Input
+{
+	struct
+	{
+		BYTE a : 1;
+		BYTE b : 1;
+		BYTE x : 1;
+		BYTE y : 1;
+		BYTE d_left : 1;
+		BYTE d_right : 1;
+		BYTE d_down : 1;
+		BYTE d_up : 1;
+	
+		BYTE start : 1;
+		BYTE z : 1;
+		BYTE r : 1;
+		BYTE l : 1;
+		BYTE : 4;
+	} buttons;
+
+	struct
+	{
+		BYTE X, Y;
+	} axis[GCN_Controller_Axis_SIZE];
+
+	BYTE shoulder[GCN_Controller_Shoulder_SIZE];
+} GCN_Controller_Input;
+
+//Start HID section of header --------------------------------------------------
+
+//Describes report coming in from device
+typedef struct _GCN_AdapterData
+{
+	BYTE signal;
+
+	struct
+	{
+		struct
+		{
+			BYTE:2;
+			BYTE powered : 1;
+			BYTE:1;
+			BYTE type : 2;
+			BYTE:2;
+		} status;
+		GCN_Controller_Input input;
+	} port[4];
+} GCN_AdapterData;
+
+//Describes report for a single controller
+typedef struct _GCN_ControllerReport
+{
+	BYTE id;
+	GCN_Controller_Input input;
+} GCN_ControllerReport;
+
+//Describes report leaving driver to HID minidriver
+typedef struct _GCN_AdapterReport
+{
+	GCN_ControllerReport port[4];
+} GCN_AdapterReport;
+
+//HID section end --------------------------------------------------------------
+
+enum GCN_Controller_Deadzone_Control
+{
+	GCN_Controller_Deadzone_NONE = 0, GCN_Controller_Deadzone_LINEAR = 1
+};
+
+typedef IOCTL_GCN_Adapter_Deadzone_Controller_Data
+	GCN_Controller_Deadzone_Status;
 
 typedef struct _GCN_Controller_Status
 {
-	BYTE lastStatus;
+	BYTE lastControllerState;
 
 	GCN_Controller_Deadzone_Status deadzone;
 	BYTE rumble;
@@ -95,16 +101,45 @@ typedef struct _GCN_Controller_Status
 
 } GCN_Controller_Status;
 
+/**	@brief
+ *
+ */
 void GCN_Controller_Status_Init(GCN_Controller_Status *aControllerStatus);
-void GCN_Controller_Status_Update_Deadzone(GCN_Controller_Status *aControllerStatus, GCN_Controller_Deadzone_Status *aNewStatus);
 
-struct _DEVICE_CONTEXT;
-typedef struct _DEVICE_CONTEXT DEVICE_CONTEXT;
+/**	@brief
+*
+*/
+void GCN_Controller_Status_Update_Deadzone(
+	GCN_Controller_Status *aControllerStatus,
+	GCN_Controller_Deadzone_Status *aNewStatus);
 
+/**	@brief
+*
+*/
 NTSTATUS GCN_Adapter_Rumble(DEVICE_CONTEXT *apDeviceContext, BYTE aRumble);
-NTSTATUS GCN_Controller_Rumble(DEVICE_CONTEXT *apDeviceContext, BYTE aIndex, BYTE aRumble);
 
+/**	@brief
+*
+*/
+NTSTATUS GCN_Controller_Rumble(
+	DEVICE_CONTEXT *apDeviceContext, int aIndex, BOOLEAN aRumble);
 
+/**	Helper that sets the USB device's calibration values from current values.
+ *
+ *	@param [in] apDeviceContext Device context used by driver.
+ *	@param [in] aIndex Index of port to calibrate [ 0, 3 ]. A -1 indicates to
+ *		calibrate all ports.
+ *
+ *	@returns NTSTATUS. @See
+ *		http://msdn.microsoft.com/en-us/library/cc704588.aspx for details.
+ *
+*/
+NTSTATUS GCN_Controller_Calibrate(
+	DEVICE_CONTEXT _In_ *pDeviceContext, int _In_ aIndex);
+
+/**	@brief
+*
+*/
 void prepare_report(
 	DEVICE_CONTEXT *apDeviceContext,
 	GCN_AdapterData *in,

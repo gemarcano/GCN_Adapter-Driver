@@ -1,68 +1,12 @@
 #include "Include.h"
 #include "gcn_interface.tmh"
 
-/*--
-
-Copyright (c) Microsoft Corporation.  All rights reserved.
-
-THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY
-KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR
-PURPOSE.
-
-
-Module Name:
-
-RawPdo.c
-
-Abstract: This module have the code enumerate a raw PDO for every device
-the filter attaches to so that it can provide a direct
-sideband communication with the usermode application.
-
-The toaster filter driver sample demonstrates an alternation
-approach where you can create one control-device for all the
-instances of the filter device.
-
-Environment:
-
-Kernel mode only.
-
---*/
-
-
-VOID
-GCN_Adapter_EvtIoDeviceControlForRawPdo(
+VOID GCN_Adapter_EvtIoDeviceControlForRawPdo(
 IN WDFQUEUE      Queue,
 IN WDFREQUEST    Request,
 IN size_t        OutputBufferLength,
 IN size_t        InputBufferLength,
-IN ULONG         IoControlCode
-)
-/*++
-
-Routine Description:
-
-This routine is the dispatch routine for device control requests.
-
-Arguments:
-
-Queue - Handle to the framework queue object that is associated
-with the I/O request.
-Request - Handle to a framework request object.
-
-OutputBufferLength - length of the request's output buffer,
-if an output buffer is available.
-InputBufferLength - length of the request's input buffer,
-if an input buffer is available.
-
-IoControlCode - the driver-defined or system-defined I/O control code
-(IOCTL) that is associated with the request.
-
-Return Value:
-
-VOID
-
---*/
+IN ULONG         IoControlCode)
 {
 	NTSTATUS status = STATUS_UNSUCCESSFUL;
 	WDFDEVICE parent = WdfIoQueueGetDevice(Queue);
@@ -84,33 +28,17 @@ VOID
 
 	switch (IoControlCode) {
 	case IOCTL_GCN_ADAPTER_CALIBRATE:
-		WDF_REQUEST_FORWARD_OPTIONS_INIT(&forwardOptions);
-		status = WdfRequestForwardToParentDeviceIoQueue(Request, pdoData->ioctlQueue, &forwardOptions);
-		if (!NT_SUCCESS(status)) {
-			WdfRequestComplete(Request, status);
-		}
-		break;
 	case IOCTL_GCN_ADAPTER_SET_DEADZONE:
-		WDF_REQUEST_FORWARD_OPTIONS_INIT(&forwardOptions);
-		status = WdfRequestForwardToParentDeviceIoQueue(Request, pdoData->ioctlQueue, &forwardOptions);
-		if (!NT_SUCCESS(status)) {
-			WdfRequestComplete(Request, status);
-		}
-		break;
 	case IOCTL_GCN_ADAPTER_SET_RUMBLE:
-		WDF_REQUEST_FORWARD_OPTIONS_INIT(&forwardOptions);
-		status = WdfRequestForwardToParentDeviceIoQueue(Request, pdoData->ioctlQueue, &forwardOptions);
-		if (!NT_SUCCESS(status)) {
-			WdfRequestComplete(Request, status);
-		}
-		break;
 	case IOCTL_GCN_ADAPTER_GET_DEADZONE:
 		WDF_REQUEST_FORWARD_OPTIONS_INIT(&forwardOptions);
-		status = WdfRequestForwardToParentDeviceIoQueue(Request, pdoData->ioctlQueue, &forwardOptions);
-		if (!NT_SUCCESS(status)) {
-			WdfRequestComplete(Request, status);
+		status = WdfRequestForwardToParentDeviceIoQueue(
+			Request, pdoData->ioctlQueue, &forwardOptions);
+		if (NT_SUCCESS(status)) {
+			break;
 		}
-		break;
+	
+		//If it failed, fall through and let this function complete the request
 	default:
 		WdfRequestComplete(Request, status);
 		break;
@@ -124,21 +52,7 @@ VOID
 NTSTATUS
 GCN_Adapter_CreateRawPdo(
 WDFDEVICE       Device,
-ULONG           InstanceNo
-)
-/*++
-
-Routine Description:
-
-This routine creates and initialize a PDO.
-
-Arguments:
-
-Return Value:
-
-NT Status code.
-
---*/
+ULONG           InstanceNo)
 {
 	NTSTATUS status;
 	PWDFDEVICE_INIT pDeviceInit = NULL;

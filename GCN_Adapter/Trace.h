@@ -20,6 +20,7 @@
 		WPP_DEFINE_BIT(TRACE_IO)										\
 		WPP_DEFINE_BIT(TRACE_POWER)										\
 		WPP_DEFINE_BIT(TRACE_GCN_INTERFACE)								\
+		WPP_DEFINE_BIT(TRACE_GCN_CONTROLLER)							\
 		)
 
 #define WPP_FLAG_LEVEL_LOGGER(flag, level)		\

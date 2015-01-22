@@ -71,7 +71,7 @@ VOID GCN_AdapterEvtUsbInterruptPipeReadComplete(
 
 	TraceEvents(TRACE_LEVEL_VERBOSE, TRACE_INTERRUPT,
 		"GCN_AdapterEvtUsbInterruptPipeReadComplete matched: %x\n",
-		pDeviceContext->adapterData.Signal == 0x21);
+		pDeviceContext->adapterData.signal == 0x21);
 
 	//Handle next Interrupt Message IOCTLs, READ_REPORT
 	//TODO check if this is the only IOCTL message we need to deal with

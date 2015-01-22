@@ -33,9 +33,6 @@
     <ClInclude Include="Driver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Queue.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Trace.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -68,9 +65,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Queue.c">
-      <Filter>Source Files\Driver</Filter>
-    </ClCompile>
     <ClCompile Include="Driver.c">
       <Filter>Source Files\Driver</Filter>
     </ClCompile>

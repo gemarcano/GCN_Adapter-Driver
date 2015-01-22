@@ -19,13 +19,11 @@
 
 #include "Device.h"
 #include "Driver.h"
-#include "Queue.h"
 #include "Trace.h"
 #include "IO.h"
 #include "Interrupt.h"
 #include "Ioctl.h"
 #include "Power.h"
-#include "Queue.h"
 #include "HID.h"
 #include "GCN_Interface.h"
 #include "GCN_Adapter.h"

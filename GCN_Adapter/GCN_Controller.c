@@ -1,5 +1,5 @@
 #include "Include.h"
-#include "GCN_Controller.h"
+#include "gcn_controller.tmh"
 
 static void null_handle_shoulder(BYTE *axis, BYTE zero, double center, double sensitivity) {}
 static void null_handle_axis(BYTE axis[2], BYTE zero[2], double center[2], double sensitivity) {}
@@ -10,13 +10,10 @@ static void linear_handle_axis(BYTE axis[2], BYTE zero[2], double center[2], dou
 
 GCN_Controller_Status GCN_Controller_Status_Zero =
 {
-	.lastStatus = 0,
+	.lastControllerState = 0,
 	.rumble = 0,
-	.deadzone =
-	{
-		.axis = { { .mode = GCN_Controller_Null_LINEAR, .deadzone = DEADZONE }, { .mode = (BYTE)GCN_Controller_Null_LINEAR, .deadzone = DEADZONE } },
-		.shoulder = { { .mode = GCN_Controller_Null_LINEAR, .deadzone = DEADZONE }, { .mode = (BYTE)GCN_Controller_Null_LINEAR, .deadzone = DEADZONE } }
-	},
+	.deadzone.axis = { { .mode = GCN_Controller_Deadzone_LINEAR, .deadzone = DEADZONE }, { .mode = (BYTE)GCN_Controller_Deadzone_LINEAR, .deadzone = DEADZONE } },
+	.deadzone.shoulder = { { .mode = GCN_Controller_Deadzone_LINEAR, .deadzone = DEADZONE }, { .mode = (BYTE)GCN_Controller_Deadzone_LINEAR, .deadzone = DEADZONE } },
 	.function_axis = { linear_handle_axis, linear_handle_axis },
 	.function_shoulder = { linear_handle_shoulder, linear_handle_shoulder}
 };
@@ -35,26 +32,23 @@ void GCN_Controller_Status_Update_Deadzone(GCN_Controller_Status *apControllerSt
 	{
 		switch (apControllerStatus->deadzone.axis[i].mode)
 		{
-		case GCN_Controller_Null_NONE:
+		case GCN_Controller_Deadzone_NONE:
 			apControllerStatus->function_axis[i] = null_handle_axis;
 			break;
-		case GCN_Controller_Null_LINEAR:
+		case GCN_Controller_Deadzone_LINEAR:
 			apControllerStatus->function_axis[i] = linear_handle_axis;
 			break;
 
 		default:
 			break;
 		}
-	}
 
-	for (i = 0; i < 2; ++i)
-	{
 		switch (apControllerStatus->deadzone.shoulder[i].mode)
 		{
-		case GCN_Controller_Null_NONE:
+		case GCN_Controller_Deadzone_NONE:
 			apControllerStatus->function_shoulder[i] = null_handle_shoulder;
 			break;
-		case GCN_Controller_Null_LINEAR:
+		case GCN_Controller_Deadzone_LINEAR:
 			apControllerStatus->function_shoulder[i] = linear_handle_shoulder;
 			break;
 
@@ -65,41 +59,39 @@ void GCN_Controller_Status_Update_Deadzone(GCN_Controller_Status *apControllerSt
 }
 
 static GCN_ControllerReport GCN_AdapterControllerZero = {
-	0,
-	{ { 0 }, { 0 }, { 127, 127 }, { 127, 127 }, { 0, 0 } }
+	.id = 0,
+	.input.buttons = { 0, 0 },
+	.input.axis = { { 127, 127 }, { 127, 127 } },
+	.input.shoulder = { 0, 0 }
 };
 
 void GCN_Adapter_Rumble_Completion(
-	_In_  WDFREQUEST Request,
-	_In_  WDFIOTARGET Target,
-	_In_  PWDF_REQUEST_COMPLETION_PARAMS Params,
-	_In_  WDFCONTEXT Context
-	)
+	_In_  WDFREQUEST aRequest,
+	_In_  WDFIOTARGET aTarget,
+	_In_  PWDF_REQUEST_COMPLETION_PARAMS apParams,
+	_In_  WDFCONTEXT aContext)
 {
-	NTSTATUS status = WdfRequestGetStatus(Request);
+	NTSTATUS status = WdfRequestGetStatus(aRequest);
 	//TODO do something, tracing, error checking?
 	//How about updating rumble status?
 }
 
-//FIXME 
 NTSTATUS GCN_Adapter_Rumble(PDEVICE_CONTEXT apDeviceContext, BYTE aRumble)
 {
 	NTSTATUS status;
 	GCN_AdapterData adapterData;
-	DWORD written = 0;
 	WDF_REQUEST_REUSE_PARAMS params;
-	WDFMEMORY buffer;
 	BYTE *data = WdfMemoryGetBuffer(apDeviceContext->rumbleMemory, NULL);
+	BYTE i;
 
 	WdfSpinLockAcquire(apDeviceContext->dataLock);
 	adapterData = apDeviceContext->adapterData;
 	WdfSpinLockRelease(apDeviceContext->dataLock);
 
-	data[1] = apDeviceContext->controllerStatus[0].rumble = aRumble & 0x1 * adapterData.Port[0].Status.powered;
-	data[2] = apDeviceContext->controllerStatus[1].rumble = aRumble & 0x2 * adapterData.Port[1].Status.powered;
-	data[3] = apDeviceContext->controllerStatus[2].rumble = aRumble & 0x4 * adapterData.Port[2].Status.powered;
-	data[4] = apDeviceContext->controllerStatus[3].rumble = aRumble & 0x8 * adapterData.Port[3].Status.powered;
-
+	for (i = 0; i < 4; ++i)
+	{
+		data[i + 1] = apDeviceContext->controllerStatus[i].rumble = (aRumble & (1 << i) * adapterData.port[0].status.powered) >> i;
+	}
 
 	WDF_REQUEST_REUSE_PARAMS_INIT(&params, WDF_REQUEST_REUSE_NO_FLAGS, STATUS_SUCCESS);
 	WdfRequestReuse(apDeviceContext->rumbleRequest, &params);
@@ -111,22 +103,33 @@ NTSTATUS GCN_Adapter_Rumble(PDEVICE_CONTEXT apDeviceContext, BYTE aRumble)
 	}
 	WdfRequestSetCompletionRoutine(apDeviceContext->rumbleRequest, GCN_Adapter_Rumble_Completion, NULL);
 
-	status = WdfRequestSend(apDeviceContext->rumbleRequest, WdfUsbTargetPipeGetIoTarget(apDeviceContext->interruptWritePipe), NULL);
+	WdfRequestSend(apDeviceContext->rumbleRequest, WdfUsbTargetPipeGetIoTarget(apDeviceContext->interruptWritePipe), NULL);
 
 Exit:
+	//FIXME add tracing?
 	return status;
 }
 
-NTSTATUS GCN_Controller_Rumble(PDEVICE_CONTEXT apDeviceContext, BYTE aIndex, BYTE aRumble)
+NTSTATUS GCN_Controller_Rumble(PDEVICE_CONTEXT _In_ apDeviceContext, int _In_ aIndex, BOOLEAN _In_ aRumble)
 {
 	NTSTATUS status = STATUS_BAD_DATA;
 	if (aIndex < 4)
 	{
 		BYTE rumble = 0, i;
-		apDeviceContext->controllerStatus[aIndex].rumble = !!aRumble;
-		for (i = 0; i < 4; ++i)
+		
+		if (aIndex < 0)
 		{
-			rumble |= apDeviceContext->controllerStatus[i].rumble << i;
+			i = 0;
+			aIndex = 4;
+		}
+		else
+		{
+			i = aIndex++;
+		}
+		
+		for (; i < aIndex ; ++i)
+		{
+			rumble |= !!aRumble << i;
 		}
 
 		status = GCN_Adapter_Rumble(apDeviceContext, rumble);
@@ -134,18 +137,45 @@ NTSTATUS GCN_Controller_Rumble(PDEVICE_CONTEXT apDeviceContext, BYTE aIndex, BYT
 	return status;
 }
 
-__inline double dist_2d(double vector1[2], double vector2[2])
+NTSTATUS GCN_Controller_Calibrate(PDEVICE_CONTEXT _In_ apDeviceContext, int _In_ aIndex)
+{
+	NTSTATUS status = STATUS_SUCCESS;
+	GCN_AdapterData calibrationData;
+
+	WdfSpinLockAcquire(apDeviceContext->dataLock);
+	calibrationData = apDeviceContext->adapterData;
+	WdfSpinLockRelease(apDeviceContext->dataLock);
+
+	if (aIndex < 0)
+	{
+		apDeviceContext->calibrationData = calibrationData;
+	}
+	else if (aIndex < 4)
+	{
+		apDeviceContext->calibrationData.port[aIndex] = calibrationData.port[aIndex];
+	}
+	else
+	{
+		status = STATUS_BUFFER_OVERFLOW;
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_GCN_CONTROLLER,
+			"!FUNC! bad index received! %!STATUS!\n", status);
+	}
+
+	return status;
+}
+
+static __inline double dist_2d(double vector1[2], double vector2[2])
 {
 	//sqrt is an intrinsic function of the compiler, how convenient
 	return sqrt((vector1[0] - vector2[0])*(vector1[0] - vector2[0]) + (vector1[1] - vector2[1])*(vector1[1] - vector2[1]));
 }
 
-__inline double scaled_value(double distance, double sensitivity)
+static __inline double scaled_value(double distance, double sensitivity)
 {
 	return (distance/255. - sensitivity) / (1 - sensitivity);
 }
 
-void linear_handle_axis(BYTE axis[2], BYTE zero[2], double center[2], double sensitivity)
+static void linear_handle_axis(BYTE axis[2], BYTE zero[2], double center[2], double sensitivity)
 {
 	double newAxis[2] = { axis[0], axis[1] };
 	double distance = dist_2d( newAxis, center);
@@ -162,7 +192,7 @@ void linear_handle_axis(BYTE axis[2], BYTE zero[2], double center[2], double sen
 	}
 }
 
-void linear_handle_shoulder(BYTE *axis, BYTE zero, double center, double sensitivity)
+static void linear_handle_shoulder(BYTE *axis, BYTE zero, double center, double sensitivity)
 {
 	double distance = *axis - center;
 	if (distance < sensitivity * 255)
@@ -177,6 +207,21 @@ void linear_handle_shoulder(BYTE *axis, BYTE zero, double center, double sensiti
 	}
 }
 
+static void handle_null_zones(GCN_Controller_Input _In_ *apCal, GCN_Controller_Status _In_ *apStatus, GCN_Controller_Input _Inout_ *apOutput)
+{
+	double center[3][2] =
+	{
+		{ apCal->axis[0].X, apCal->axis[0].Y },
+		{ apCal->axis[1].X, apCal->axis[1].Y },
+		{ apCal->shoulder[0], apCal->shoulder[1] }
+	};
+	//Handle null zones
+	apStatus->function_axis[0]((BYTE*)&apOutput->axis[0], (BYTE*)&GCN_AdapterControllerZero.input.axis[0], center[0], apStatus->deadzone.axis[0].deadzone / 255.);
+	apStatus->function_axis[1]((BYTE*)&apOutput->axis[1], (BYTE*)&GCN_AdapterControllerZero.input.axis[1], center[1], apStatus->deadzone.axis[1].deadzone / 255.);
+	apStatus->function_shoulder[0](&apOutput->shoulder[0], GCN_AdapterControllerZero.input.shoulder[0], center[2][0], apStatus->deadzone.shoulder[0].deadzone / 255.);
+	apStatus->function_shoulder[1](&apOutput->shoulder[1], GCN_AdapterControllerZero.input.shoulder[1], center[2][1], apStatus->deadzone.shoulder[1].deadzone / 255.);
+}
+
 //This needs to cycle through the 4 controllers
 void prepare_report(
 	PDEVICE_CONTEXT apDeviceContext,
@@ -188,45 +233,33 @@ void prepare_report(
 	GCN_Controller_Status status = apDeviceContext->controllerStatus[id - 1];
 	GCN_AdapterData *cal = &apDeviceContext->calibrationData, data;
 	WDFSPINLOCK *lock = &apDeviceContext->dataLock;
-
-	double center[3][2] =
-	{
-		{ cal->Port[id - 1].Buttons.LeftAxis.X, cal->Port[id - 1].Buttons.LeftAxis.Y },
-		{ cal->Port[id - 1].Buttons.RightAxis.X, cal->Port[id - 1].Buttons.RightAxis.Y },
-		{ cal->Port[id - 1].Buttons.ShoulderAxis.left, cal->Port[id - 1].Buttons.ShoulderAxis.right }
-	};
 	
-	if (!in->Port[id - 1].Status.type)
+	if (!in->port[id - 1].status.type)
 	{
 		memcpy(out, &GCN_AdapterControllerZero, sizeof(*out));
-		if (apDeviceContext->controllerStatus[id - 1].lastStatus)
+		if (apDeviceContext->controllerStatus[id - 1].lastControllerState)
 		{
-			apDeviceContext->controllerStatus[id - 1].lastStatus = 0;
+			apDeviceContext->controllerStatus[id - 1].lastControllerState = 0;
 		}
 	}
 	else
-	{//FIXME I should move the spinlock out of here up the stack
-		WdfSpinLockAcquire(*lock);
+	{
 		data = *in;
-		WdfSpinLockRelease(*lock);
-		memcpy(&(out->Buttons), &(data.Port[id - 1].Buttons), sizeof(out->Buttons));
+		memcpy(&(out->input), &(data.port[id - 1].input), sizeof(out->input));
 
-		out->Buttons.LeftAxis.Y = ~out->Buttons.LeftAxis.Y;
+		out->input.axis[0].Y = ~out->input.axis[0].Y;
 
-		//Handle null zones
-		status.function_axis[0]((BYTE *)&out->Buttons.LeftAxis, (BYTE *)&GCN_AdapterControllerZero.Buttons.LeftAxis, center[0], status.deadzone.axis[0].deadzone/255.);
-		status.function_axis[1]((BYTE *)&out->Buttons.RightAxis, (BYTE *)&GCN_AdapterControllerZero.Buttons.RightAxis, center[1], status.deadzone.axis[1].deadzone / 255.);
-		status.function_shoulder[0](&out->Buttons.ShoulderAxis.left, GCN_AdapterControllerZero.Buttons.ShoulderAxis.left, center[2][0], status.deadzone.shoulder[0].deadzone / 255.);
-		status.function_shoulder[1](&out->Buttons.ShoulderAxis.right, GCN_AdapterControllerZero.Buttons.ShoulderAxis.right, center[2][1], status.deadzone.shoulder[1].deadzone / 255.);
+		handle_null_zones(&cal->port[id-1].input, &status, &out->input);
 
-		if (!apDeviceContext->controllerStatus[id - 1].lastStatus)
+		//Detect if the device was previously turned off. If so, calibrate
+		if (!apDeviceContext->controllerStatus[id - 1].lastControllerState)
 		{
-			GCN_AdapterFetchCalibrationData(apDeviceContext, id - 1);
-			apDeviceContext->controllerStatus[id - 1].lastStatus = 1;
+			GCN_Controller_Calibrate(apDeviceContext, id - 1);
+			apDeviceContext->controllerStatus[id - 1].lastControllerState = 1;
 		}
 
 		//Turn rumble off if it is enabled and power is removed
-		if (apDeviceContext->controllerStatus[id - 1].rumble && !data.Port[id-1].Status.powered)
+		if (apDeviceContext->controllerStatus[id - 1].rumble && !data.port[id-1].status.powered)
 		{
 			GCN_Controller_Rumble(apDeviceContext, id - 1, 0);
 		}
