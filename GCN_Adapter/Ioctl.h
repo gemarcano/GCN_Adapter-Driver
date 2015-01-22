@@ -80,4 +80,16 @@ NTSTATUS GCN_AdapterCalibrate(
 	_In_ WDFDEVICE aDevice,
 	_In_ WDFREQUEST aRequest);
 
+NTSTATUS GCN_AdapterSetSensitivity(
+	_In_ WDFDEVICE aDevice,
+	_In_ WDFREQUEST aRequest);
+
+NTSTATUS GCN_AdapterGetSensitivity(
+	_In_ WDFDEVICE aDevice,
+	_In_ WDFREQUEST aRequest);
+
+NTSTATUS GCN_AdapterSetRumble(
+	_In_ WDFDEVICE aDevice,
+	_In_ WDFREQUEST aRequest);
+
 #endif//_GCN_ADAPTER_IOCTL_H_

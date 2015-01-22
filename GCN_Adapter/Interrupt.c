@@ -63,15 +63,15 @@ VOID GCN_AdapterEvtUsbInterruptPipeReadComplete(
 	}
 
 	NT_ASSERT(aNumBytesTransferred == 37); //Number of bytes coming in from the device
-	NT_ASSERT(aNumBytesTransferred == sizeof(pDeviceContext->adaptorData));
+	NT_ASSERT(aNumBytesTransferred == sizeof(pDeviceContext->adapterData));
 
 	WdfSpinLockAcquire(pDeviceContext->dataLock);
-	memcpy(&pDeviceContext->adaptorData, WdfMemoryGetBuffer(aBuffer, NULL), aNumBytesTransferred);
+	memcpy(&pDeviceContext->adapterData, WdfMemoryGetBuffer(aBuffer, NULL), aNumBytesTransferred);
 	WdfSpinLockRelease(pDeviceContext->dataLock);
 
 	TraceEvents(TRACE_LEVEL_VERBOSE, TRACE_INTERRUPT,
 		"GCN_AdapterEvtUsbInterruptPipeReadComplete matched: %x\n",
-		pDeviceContext->adaptorData.Signal == 0x21);
+		pDeviceContext->adapterData.Signal == 0x21);
 
 	//Handle next Interrupt Message IOCTLs, READ_REPORT
 	//TODO check if this is the only IOCTL message we need to deal with

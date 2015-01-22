@@ -68,7 +68,7 @@ extern GCN_ControllerReport GCN_AdapterControllerZero;
 
 enum GCN_Controller_Null_Control
 {
-	GCN_Controller_Null_NONE, GCN_Controller_Null_LINEAR
+	GCN_Controller_Null_NONE = 0, GCN_Controller_Null_LINEAR = 1
 };
 
 enum GCN_Controller_Axis
@@ -81,32 +81,29 @@ enum GCN_Controller_Shoulder
 	GCN_Controller_Shoulder_Left = 0, GCN_Controller_Shoulder_Right = 1, GCN_Controller_Shoulder_SIZE = 2
 };
 
-static void null_handle_shoulder(BYTE *axis, BYTE zero, double center) {}
-static void null_handle_axis(BYTE axis[2], BYTE zero[2], double center[2]) {}
-static void linear_handle_shoulder(BYTE *axis, BYTE zero, double center);
-static void linear_handle_axis(BYTE axis[2], BYTE zero[2], double center[2]);
+typedef IOCTL_GCN_Adapter_Deadzone_Controller_Data GCN_Controller_Deadzone_Status;
 
 typedef struct _GCN_Controller_Status
 {
 	BYTE lastStatus;
-	double axis_sensitivity[GCN_Controller_Axis_SIZE];
-	double shoulder_sensitivity[GCN_Controller_Shoulder_SIZE];
 
-	void(*function_axis[2])(BYTE axis[2], BYTE zero[2], double center[2]);
-	void(*function_shoulder[2])(BYTE *axis, BYTE zero, double center);
+	GCN_Controller_Deadzone_Status deadzone;
+	BYTE rumble;
+
+	void(*function_axis[2])(BYTE axis[2], BYTE zero[2], double center[2], double sensitivity);
+	void(*function_shoulder[2])(BYTE *axis, BYTE zero, double center, double sensitivity);
 
 } GCN_Controller_Status;
 
 void GCN_Controller_Status_Init(GCN_Controller_Status *aControllerStatus);
-void GCN_Controller_Change_Null_Control(GCN_Controller_Status *aStatus, enum GCN_Controller_Null_Control aEnum);
-void GCN_Controller_Change_Null_Control_Axis(GCN_Controller_Status *aStatus, enum GCN_Controller_Axis aAxis, enum GCN_Controller_Null_Control aEnum);
-void GCN_Controller_Change_Null_Control_Shoulder(GCN_Controller_Status *aStatus, enum GCN_Controller_Shoulder aShoulder, enum GCN_Controller_Null_Control aEnum);
-void GCN_Controller_Change_Sensitivity_Control(GCN_Controller_Status *aStatus, BYTE aSensitivity);
-void GCN_Controller_Change_Sensitivity_Control_Axis(GCN_Controller_Status *aStatus, enum GCN_Controller_Axis aAxis, BYTE aSensitivity);
-void GCN_Controller_Change_Sensitivity_Control_Shoulder(GCN_Controller_Status *aStatus, enum GCN_Controller_Shoulder aShoulder, BYTE aSensitivity);
+void GCN_Controller_Status_Update_Deadzone(GCN_Controller_Status *aControllerStatus, GCN_Controller_Deadzone_Status *aNewStatus);
 
 struct _DEVICE_CONTEXT;
 typedef struct _DEVICE_CONTEXT DEVICE_CONTEXT;
+
+NTSTATUS GCN_Adapter_Rumble(DEVICE_CONTEXT *apDeviceContext, BYTE aRumble);
+NTSTATUS GCN_Controller_Rumble(DEVICE_CONTEXT *apDeviceContext, BYTE aIndex, BYTE aRumble);
+
 
 void prepare_report(
 	DEVICE_CONTEXT *apDeviceContext,

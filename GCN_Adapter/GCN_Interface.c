@@ -90,6 +90,27 @@ VOID
 			WdfRequestComplete(Request, status);
 		}
 		break;
+	case IOCTL_GCN_ADAPTER_SET_DEADZONE:
+		WDF_REQUEST_FORWARD_OPTIONS_INIT(&forwardOptions);
+		status = WdfRequestForwardToParentDeviceIoQueue(Request, pdoData->ioctlQueue, &forwardOptions);
+		if (!NT_SUCCESS(status)) {
+			WdfRequestComplete(Request, status);
+		}
+		break;
+	case IOCTL_GCN_ADAPTER_SET_RUMBLE:
+		WDF_REQUEST_FORWARD_OPTIONS_INIT(&forwardOptions);
+		status = WdfRequestForwardToParentDeviceIoQueue(Request, pdoData->ioctlQueue, &forwardOptions);
+		if (!NT_SUCCESS(status)) {
+			WdfRequestComplete(Request, status);
+		}
+		break;
+	case IOCTL_GCN_ADAPTER_GET_DEADZONE:
+		WDF_REQUEST_FORWARD_OPTIONS_INIT(&forwardOptions);
+		status = WdfRequestForwardToParentDeviceIoQueue(Request, pdoData->ioctlQueue, &forwardOptions);
+		if (!NT_SUCCESS(status)) {
+			WdfRequestComplete(Request, status);
+		}
+		break;
 	default:
 		WdfRequestComplete(Request, status);
 		break;

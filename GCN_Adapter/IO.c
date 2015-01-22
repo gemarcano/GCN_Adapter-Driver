@@ -34,7 +34,7 @@ VOID GCN_AdapterEvtIoRead(
 	}
 
 	WdfSpinLockAcquire(pDeviceContext->dataLock);
-	memcpy(WdfMemoryGetBuffer(reqMemory, NULL), &pDeviceContext->adaptorData, Length);
+	memcpy(WdfMemoryGetBuffer(reqMemory, NULL), &pDeviceContext->adapterData, Length);
 	WdfSpinLockRelease(pDeviceContext->dataLock);
 
 	WdfRequestCompleteWithInformation(Request, status, Length);

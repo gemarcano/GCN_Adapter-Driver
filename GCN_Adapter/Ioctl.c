@@ -122,6 +122,39 @@ VOID GCN_AdapterEvtInternalDeviceControl(
 		}
 		return;
 
+	case IOCTL_GCN_ADAPTER_SET_DEADZONE:
+		status = GCN_AdapterSetSensitivity(device, aRequest);
+		if (!NT_SUCCESS(status))
+		{
+			TraceEvents(TRACE_LEVEL_ERROR, TRACE_IOCTL,
+				"GCN_AdapterSetSensitivity failed with status: 0x%x\n", status);
+
+			WdfRequestComplete(aRequest, status);
+		}
+		return;
+
+	case IOCTL_GCN_ADAPTER_GET_DEADZONE:
+		status = GCN_AdapterGetSensitivity(device, aRequest);
+		if (!NT_SUCCESS(status))
+		{
+			TraceEvents(TRACE_LEVEL_ERROR, TRACE_IOCTL,
+				"GCN_AdapterGetSensitivity failed with status: 0x%x\n", status);
+
+			WdfRequestComplete(aRequest, status);
+		}
+		return;
+
+	case IOCTL_GCN_ADAPTER_SET_RUMBLE:
+		status = GCN_AdapterSetRumble(device, aRequest);
+		if (!NT_SUCCESS(status))
+		{
+			TraceEvents(TRACE_LEVEL_ERROR, TRACE_IOCTL,
+				"GCN_AdapterSetRumble failed with status: 0x%x\n", status);
+
+			WdfRequestComplete(aRequest, status);
+		}
+		return;
+
 	case IOCTL_HID_SET_FEATURE:
 		//
 		// This sends a HID class feature report to a top-level collection of
@@ -216,7 +249,7 @@ VOID GCN_AdapterUsbIoctlGetInterruptMessage(
 		{
 			if (NT_SUCCESS(aReaderStatus))
 			{
-				prepare_report(pDevContext, &pDevContext->adaptorData, pReport);
+				prepare_report(pDevContext, &pDevContext->adapterData, pReport);
 				bytesReturned = bytesToCopy;
 			}
 			else
@@ -504,23 +537,14 @@ NTSTATUS GCN_AdapterCalibrate(
 	WDF_REQUEST_PARAMETERS_INIT(&params);
 	WdfRequestGetParameters(aRequest, &params);
 
-	//
-	// IOCTL_HID_SET_FEATURE & IOCTL_HID_GET_FEATURE are not METHOD_NIEHTER
-	// IOCTLs. So you cannot retreive UserBuffer from the IRP using Wdf
-	// function. As a result we have to escape out to WDM to get the UserBuffer
-	// directly from the IRP. 
-	//
-	if (params.Parameters.DeviceIoControl.InputBufferLength < 1) {
+	// This IOCTL is METHOD_BUFFER, use SystemBuffer to get memory
+	if (params.Parameters.DeviceIoControl.InputBufferLength < sizeof(IOCTL_GCN_Adapter_Calibrate_Data)) {
 		status = STATUS_BUFFER_TOO_SMALL;
 		TraceEvents(TRACE_LEVEL_ERROR, TRACE_IOCTL,
 			"Userbuffer is small 0x%x\n", status);
 		return status;
 	}
 
-	//
-	// This is a kernel buffer so no need for try/except block when accesssing
-	// Irp->UserBuffer.
-	//
 	pData = WdfRequestWdmGetIrp(aRequest)->AssociatedIrp.SystemBuffer;
 	if (pData == NULL) {
 		status = STATUS_INVALID_DEVICE_REQUEST;
@@ -555,6 +579,138 @@ NTSTATUS GCN_AdapterCalibrate(
 		WdfRequestSetInformation(aRequest, 0);
 		WdfRequestComplete(aRequest, status);
 	}
+
+	TraceEvents(TRACE_LEVEL_VERBOSE, TRACE_IOCTL, "!FUNC! Exit\n");
+	return status;
+}
+
+NTSTATUS GCN_AdapterSetSensitivity(
+	_In_ WDFDEVICE aDevice,
+	_In_ WDFREQUEST aRequest)
+{
+	WDF_REQUEST_PARAMETERS params;
+	IOCTL_GCN_Adapter_Deadzone_Data *pData;
+	PDEVICE_CONTEXT pDeviceContext = DeviceGetContext(aDevice);
+	NTSTATUS status = STATUS_SUCCESS;
+	UCHAR i;
+
+	PAGED_CODE();
+
+	TraceEvents(TRACE_LEVEL_VERBOSE, TRACE_IOCTL, "!FUNC! Enter\n");
+
+	WDF_REQUEST_PARAMETERS_INIT(&params);
+	WdfRequestGetParameters(aRequest, &params);
+
+	// This IOCTL is METHOD_BUFFER, use SystemBuffer to get memory
+	if (params.Parameters.DeviceIoControl.InputBufferLength < sizeof(IOCTL_GCN_Adapter_Deadzone_Data)) {
+		status = STATUS_BUFFER_TOO_SMALL;
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_IOCTL,
+			"Userbuffer is small 0x%x\n", status);
+		return status;
+	}
+
+	pData = WdfRequestWdmGetIrp(aRequest)->AssociatedIrp.SystemBuffer;
+	if (pData == NULL) {
+		status = STATUS_INVALID_DEVICE_REQUEST;
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_IOCTL,
+			"Irp->UserBuffer is NULL 0x%x\n", status);
+		return status;
+	}
+
+	status = STATUS_SUCCESS;
+	
+	GCN_Controller_Status_Update_Deadzone(&pDeviceContext->controllerStatus[pData->controller], &pData->data);
+	
+	WdfRequestSetInformation(aRequest, 0);
+	WdfRequestComplete(aRequest, status);
+	
+	TraceEvents(TRACE_LEVEL_VERBOSE, TRACE_IOCTL, "!FUNC! Exit\n");
+	return status;
+}
+
+NTSTATUS GCN_AdapterSetRumble(
+	_In_ WDFDEVICE aDevice,
+	_In_ WDFREQUEST aRequest)
+{
+	WDF_REQUEST_PARAMETERS params;
+	IOCTL_GCN_Adapter_Rumble_Data *pData;
+	PDEVICE_CONTEXT pDeviceContext = DeviceGetContext(aDevice);
+	GCN_AdapterData adapterData;
+	NTSTATUS status;
+
+	PAGED_CODE();
+
+	TraceEvents(TRACE_LEVEL_VERBOSE, TRACE_IOCTL, "!FUNC! Enter\n");
+
+	WDF_REQUEST_PARAMETERS_INIT(&params);
+	WdfRequestGetParameters(aRequest, &params);
+
+	// This IOCTL is METHOD_BUFFER, use SystemBuffer to get memory
+	if (params.Parameters.DeviceIoControl.InputBufferLength < sizeof(IOCTL_GCN_Adapter_Rumble_Data)) {
+		status = STATUS_BUFFER_TOO_SMALL;
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_IOCTL,
+			"Userbuffer is small 0x%x\n", status);
+		return status;
+	}
+
+	pData = WdfRequestWdmGetIrp(aRequest)->AssociatedIrp.SystemBuffer;
+	if (pData == NULL) {
+		status = STATUS_INVALID_DEVICE_REQUEST;
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_IOCTL,
+			"Irp->UserBuffer is NULL 0x%x\n", status);
+		return status;
+	}
+
+	status = GCN_Adapter_Rumble(pDeviceContext, pData->controllers);
+
+	WdfRequestSetInformation(aRequest, 0);
+	WdfRequestComplete(aRequest, status);
+
+	TraceEvents(TRACE_LEVEL_VERBOSE, TRACE_IOCTL, "!FUNC! Exit\n");
+	return status;
+}
+
+NTSTATUS GCN_AdapterGetSensitivity(
+	_In_ WDFDEVICE aDevice,
+	_In_ WDFREQUEST aRequest)
+{
+	WDF_REQUEST_PARAMETERS params;
+	IOCTL_GCN_Adapter_Deadzone_Data *pData;
+	PDEVICE_CONTEXT pDeviceContext = DeviceGetContext(aDevice);
+	NTSTATUS status = STATUS_SUCCESS;
+	UCHAR i;
+
+	PAGED_CODE();
+
+	TraceEvents(TRACE_LEVEL_VERBOSE, TRACE_IOCTL, "!FUNC! Enter\n");
+
+	WDF_REQUEST_PARAMETERS_INIT(&params);
+	WdfRequestGetParameters(aRequest, &params);
+
+	// This IOCTL is METHOD_BUFFER, use SystemBuffer to get memory
+	if (params.Parameters.DeviceIoControl.InputBufferLength < sizeof(IOCTL_GCN_Adapter_Deadzone_Data) ||
+		params.Parameters.DeviceIoControl.OutputBufferLength < sizeof(IOCTL_GCN_Adapter_Deadzone_Data))
+	{
+		status = STATUS_BUFFER_TOO_SMALL;
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_IOCTL,
+			"Userbuffer is small 0x%x\n", status);
+		return status;
+	}
+
+	pData = WdfRequestWdmGetIrp(aRequest)->AssociatedIrp.SystemBuffer;
+	if (pData == NULL) {
+		status = STATUS_INVALID_DEVICE_REQUEST;
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_IOCTL,
+			"Irp->UserBuffer is NULL 0x%x\n", status);
+		return status;
+	}
+
+
+	pData->data = pDeviceContext->controllerStatus[pData->controller].deadzone;
+
+
+	WdfRequestSetInformation(aRequest, sizeof(IOCTL_GCN_Adapter_Deadzone_Data));
+	WdfRequestComplete(aRequest, status);
 
 	TraceEvents(TRACE_LEVEL_VERBOSE, TRACE_IOCTL, "!FUNC! Exit\n");
 	return status;

@@ -42,30 +42,38 @@ NTSTATUS GCN_AdapterCreateDevice(
 
 	deviceContext = DeviceGetContext(device);
 
+	WDF_OBJECT_ATTRIBUTES_INIT(&deviceAttributes);
+	deviceAttributes.ParentObject = device;
+
 	//It's fine if this device is unplugged at any time
 	WDF_DEVICE_PNP_CAPABILITIES_INIT(&pnpCaps);
 	pnpCaps.SurpriseRemovalOK = WdfTrue;
 	WdfDeviceSetPnpCapabilities(device, &pnpCaps);
-
-	//
-	// Create a device interface so that applications can find and talk
-	// to us.
-	//
-	/*status = WdfDeviceCreateDeviceInterface(
-		device,
-		&GUID_DEVINTERFACE_GCN_ADAPTER,
-		NULL); // ReferenceString
-
-	if (!NT_SUCCESS(status))
-	{
-		goto Error;
-	}*/
 	
 	status = GCN_AdapterQueueInitialize(device);
 	if (!NT_SUCCESS(status))
 	{
 		goto Error;
 	}
+
+	//Initialize spinlock for data synchronization
+	status = WdfSpinLockCreate(&deviceAttributes, &deviceContext->dataLock); //Attributes is already initialized to use the device as the parent object
+	if (!NT_SUCCESS(status))
+	{
+		goto Error;
+	}
+
+	//Initialize controller status
+	GCN_Controller_Status_Init(&deviceContext->controllerStatus[0]);
+	GCN_Controller_Status_Init(&deviceContext->controllerStatus[1]);
+	GCN_Controller_Status_Init(&deviceContext->controllerStatus[2]);
+	GCN_Controller_Status_Init(&deviceContext->controllerStatus[3]);
+
+	//Initialize rumble support data
+	WdfRequestCreate(&deviceAttributes, NULL, &deviceContext->rumbleRequest);
+	WdfMemoryCreate(&deviceAttributes, NonPagedPool, 0, 5, &deviceContext->rumbleMemory, NULL);
+
+	((BYTE*)(WdfMemoryGetBuffer(deviceContext->rumbleMemory, NULL)))[0] = 0x11;
 
 	return status;
 
@@ -82,10 +90,8 @@ NTSTATUS GCN_AdapterEvtDevicePrepareHardware(
 	NTSTATUS status;
 	PDEVICE_CONTEXT pDeviceContext;
 	WDF_USB_DEVICE_CREATE_CONFIG createParams;
-	WDF_USB_DEVICE_SELECT_CONFIG_PARAMS configParams;
 	WDF_USB_DEVICE_INFORMATION deviceInfo;
 	PUSB_DEVICE_DESCRIPTOR usbDeviceDescriptor = NULL;
-	ULONG waitWakeEnable;
 	WDF_MEMORY_DESCRIPTOR memoryDescriptor;
 	WDF_OBJECT_ATTRIBUTES attributes;
 
@@ -95,8 +101,6 @@ NTSTATUS GCN_AdapterEvtDevicePrepareHardware(
 
 	UNREFERENCED_PARAMETER(aResourceList);
 	UNREFERENCED_PARAMETER(aResourceListTranslated);
-
-	waitWakeEnable = FALSE;
 
 	PAGED_CODE();
 
@@ -136,7 +140,6 @@ NTSTATUS GCN_AdapterEvtDevicePrepareHardware(
 
 	if (NT_SUCCESS(status))
 	{
-		waitWakeEnable = deviceInfo.Traits & WDF_USB_DEVICE_TRAIT_REMOTE_WAKE_CAPABLE;
 		pDeviceContext->usbDeviceTraits = deviceInfo.Traits;
 	}
 	else
@@ -191,29 +194,8 @@ NTSTATUS GCN_AdapterEvtDevicePrepareHardware(
 		return status;
 	}
 
-	//Initialize spinlock for data synchronization
-	WdfSpinLockCreate(&attributes, &pDeviceContext->dataLock); //Attributes is already initialized to use the device as the parent object
-
 	//Fetch calibration data
 	GCN_AdapterFetchCalibrationData(pDeviceContext, -1);
-
-	//Initialize controller status
-	GCN_Controller_Status_Init(&pDeviceContext->controllerStatus[0]);
-	GCN_Controller_Status_Init(&pDeviceContext->controllerStatus[1]);
-	GCN_Controller_Status_Init(&pDeviceContext->controllerStatus[2]);
-	GCN_Controller_Status_Init(&pDeviceContext->controllerStatus[3]);
-
-	//
-	// Enable wait-wake and idle timeout if the device supports it (Filter HID does not support this?)
-	//
-	/*if (waitWakeEnable) {
-		status = GCN_AdapterSetPowerPolicy(Device);
-		if (!NT_SUCCESS(status)) {
-			TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE,
-				"GCN_AdapterSetPowerPolicy failed  %!STATUS!\n", status);
-			return status;
-		}
-	}*/
 
 	status = GCN_AdapterConfigContReaderForInterruptEndPoint(pDeviceContext);
 
@@ -362,11 +344,11 @@ VOID GCN_AdapterEvtDeviceSelfManagedIoFlush(
 
 NTSTATUS GCN_AdapterFetchCalibrationData(PDEVICE_CONTEXT _In_ apDeviceContext, int _In_ aIndex)
 {
-	NTSTATUS status;	
+	NTSTATUS status = STATUS_SUCCESS;	
 	GCN_AdapterData calibrationData;
 
 	WdfSpinLockAcquire(apDeviceContext->dataLock);
-	calibrationData = apDeviceContext->adaptorData;
+	calibrationData = apDeviceContext->adapterData;
 	WdfSpinLockRelease(apDeviceContext->dataLock);
 
 	if (aIndex < 0)

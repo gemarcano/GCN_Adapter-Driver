@@ -8,25 +8,27 @@
 
 typedef struct _DEVICE_CONTEXT
 {
-	//USB State
+	//USB Level
     WDFUSBDEVICE usbDevice;
 	WDFUSBINTERFACE usbInterface;
 	WDFMEMORY usbDeviceDescriptor;
 	ULONG usbDeviceTraits;
-
-	//Driver State
 	WDFUSBPIPE interruptReadPipe;
 	WDFUSBPIPE interruptWritePipe;
+	
+	//Driver Level
 	WDFQUEUE interruptMsgQueue;
 	WDFQUEUE readQueue;
 	WDFQUEUE writeQueue;
 	WDFQUEUE otherQueue;
 
-	//Hardware state
-	WDFSPINLOCK dataLock; //for sync
+	//Device Level
+	WDFSPINLOCK dataLock; //for synchronizing device level access
 	GCN_AdapterData calibrationData;
-	GCN_AdapterData adaptorData;
-	GCN_Controller_Status controllerStatus[4];
+	GCN_AdapterData adapterData; //Latest data read in
+	GCN_Controller_Status controllerStatus[4]; //Latest controller state
+	WDFREQUEST rumbleRequest; //async data to enable rumble
+	WDFMEMORY rumbleMemory;
 
 } DEVICE_CONTEXT, *PDEVICE_CONTEXT;
 
