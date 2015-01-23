@@ -81,7 +81,7 @@ NTSTATUS GCN_AdapterCreateDevice(
 		NULL);
 
 	((BYTE*)(WdfMemoryGetBuffer(deviceContext->rumbleMemory, NULL)))[0] = 0x11;
-
+	deviceContext->rumbleStatus = 0;
 	return status;
 
 Error:
@@ -99,6 +99,7 @@ NTSTATUS GCN_AdapterEvtDevicePrepareHardware(
 	WDF_USB_DEVICE_CREATE_CONFIG createParams;
 	WDF_USB_DEVICE_INFORMATION deviceInfo;
 	PUSB_DEVICE_DESCRIPTOR usbDeviceDescriptor = NULL;
+	WDFMEMORY memory;
 	WDF_MEMORY_DESCRIPTOR memoryDescriptor;
 	WDF_OBJECT_ATTRIBUTES attributes;
 
@@ -192,7 +193,29 @@ NTSTATUS GCN_AdapterEvtDevicePrepareHardware(
 		return status;
 	}
 
-	WDF_MEMORY_DESCRIPTOR_INIT_BUFFER(&memoryDescriptor, (PVOID)"\x13", 1);
+	status = WdfMemoryCreate(NULL, NonPagedPool, 0, 1, &memory, NULL);
+	if (!NT_SUCCESS(status))
+	{
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE,
+			"WdfMemoryCreate for initialization failed %!STATUS!\n",
+			status);
+		return status;
+	}
+
+	/*	I'm using a WDFMEMORY object here instead of just using a normal
+		descriptor with a static buffer because it seems that using memory that
+		can be paged here can cause problems if it is paged. I experienced some
+		problems where USBPORT.SYS called some functions at IRQL DISPATCH, and
+		none of the data declared in this function is in non-paged memory,
+		which triggered	a page fault. I think this is a Microsoft bug, but I
+		don't want to deal with it. Using a non-paged pool memory object works
+		without problems.
+	 */
+	WdfMemoryCopyFromBuffer(memory, 0, &"\x13", 1);
+	WDF_MEMORY_DESCRIPTOR_INIT_HANDLE(&memoryDescriptor,
+		memory,
+		NULL);
+	
 	status = WdfUsbTargetPipeWriteSynchronously(pDeviceContext->interruptWritePipe, NULL, NULL, &memoryDescriptor, NULL);
 	if (!NT_SUCCESS(status))
 	{
@@ -200,7 +223,7 @@ NTSTATUS GCN_AdapterEvtDevicePrepareHardware(
 			"WdfUsbTargetPipeWriteSynchronously failed (Init device) %!STATUS!\n", status);
 		return status;
 	}
-
+	
 	//Fetch calibration data
 	GCN_Controller_Calibrate(pDeviceContext, -1);
 

@@ -48,6 +48,9 @@ VOID GCN_AdapterEvtUsbInterruptPipeReadComplete(
 {
 	WDFDEVICE device;
 	PDEVICE_CONTEXT pDeviceContext = aContext;
+	GCN_AdapterData *pData;
+	int i;
+	BYTE rumble;
 
 	UNREFERENCED_PARAMETER(aPipe);
 
@@ -65,13 +68,22 @@ VOID GCN_AdapterEvtUsbInterruptPipeReadComplete(
 	NT_ASSERT(aNumBytesTransferred == 37); //Number of bytes coming in from the device
 	NT_ASSERT(aNumBytesTransferred == sizeof(pDeviceContext->adapterData));
 
+	pData = WdfMemoryGetBuffer(aBuffer, NULL);
+
 	WdfSpinLockAcquire(pDeviceContext->dataLock);
-	memcpy(&pDeviceContext->adapterData, WdfMemoryGetBuffer(aBuffer, NULL), aNumBytesTransferred);
+	memcpy(&pDeviceContext->adapterData, pData, aNumBytesTransferred);
 	WdfSpinLockRelease(pDeviceContext->dataLock);
 
 	TraceEvents(TRACE_LEVEL_VERBOSE, TRACE_INTERRUPT,
 		"GCN_AdapterEvtUsbInterruptPipeReadComplete matched: %x\n",
 		pDeviceContext->adapterData.signal == 0x21);
+
+	//Quickly, handle rumble information for controllers if any have gone offline
+	//Turn rumble off if it is enabled and power is removed
+	if (!pData->port[0].status.powered)
+	{
+		GCN_Adapter_Rumble(pDeviceContext, 0);
+	}
 
 	//Handle next Interrupt Message IOCTLs, READ_REPORT
 	//TODO check if this is the only IOCTL message we need to deal with

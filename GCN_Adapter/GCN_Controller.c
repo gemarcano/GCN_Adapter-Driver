@@ -82,28 +82,45 @@ NTSTATUS GCN_Adapter_Rumble(PDEVICE_CONTEXT apDeviceContext, BYTE aRumble)
 	GCN_AdapterData adapterData;
 	WDF_REQUEST_REUSE_PARAMS params;
 	BYTE *data = WdfMemoryGetBuffer(apDeviceContext->rumbleMemory, NULL);
-	BYTE i;
+	BYTE i, newStatus = 0;
 
 	WdfSpinLockAcquire(apDeviceContext->dataLock);
 	adapterData = apDeviceContext->adapterData;
 	WdfSpinLockRelease(apDeviceContext->dataLock);
 
-	for (i = 0; i < 4; ++i)
+	if ((adapterData.port[0].status.powered && (apDeviceContext->rumbleStatus != aRumble)) || (apDeviceContext->rumbleStatus && !adapterData.port[0].status.powered))
 	{
-		data[i + 1] = apDeviceContext->controllerStatus[i].rumble = (aRumble & (1 << i) * adapterData.port[0].status.powered) >> i;
+		if (adapterData.port[0].status.powered)
+		{
+			newStatus = aRumble;
+		}
+		else
+		{
+			newStatus = 0;
+		}
+
+		for (i = 0; i < 4; ++i)
+		{
+			data[i + 1] = apDeviceContext->controllerStatus[i].rumble = (newStatus >> i) & 0x01;
+		}
+
+		WDF_REQUEST_REUSE_PARAMS_INIT(&params, WDF_REQUEST_REUSE_NO_FLAGS, STATUS_SUCCESS);
+		WdfRequestReuse(apDeviceContext->rumbleRequest, &params);
+
+		status = WdfUsbTargetPipeFormatRequestForWrite(apDeviceContext->interruptWritePipe, apDeviceContext->rumbleRequest, apDeviceContext->rumbleMemory, NULL);
+		if (!NT_SUCCESS(status))
+		{
+			goto Exit;
+		}
+		WdfRequestSetCompletionRoutine(apDeviceContext->rumbleRequest, GCN_Adapter_Rumble_Completion, NULL);
+
+		WdfRequestSend(apDeviceContext->rumbleRequest, WdfUsbTargetPipeGetIoTarget(apDeviceContext->interruptWritePipe), NULL);
+		apDeviceContext->rumbleStatus = newStatus; //Should it be protected?
 	}
-
-	WDF_REQUEST_REUSE_PARAMS_INIT(&params, WDF_REQUEST_REUSE_NO_FLAGS, STATUS_SUCCESS);
-	WdfRequestReuse(apDeviceContext->rumbleRequest, &params);
-
-	status = WdfUsbTargetPipeFormatRequestForWrite(apDeviceContext->interruptWritePipe, apDeviceContext->rumbleRequest, apDeviceContext->rumbleMemory, NULL);
-	if (!NT_SUCCESS(status))
+	else
 	{
-		goto Exit;
+		status = STATUS_SUCCESS;
 	}
-	WdfRequestSetCompletionRoutine(apDeviceContext->rumbleRequest, GCN_Adapter_Rumble_Completion, NULL);
-
-	WdfRequestSend(apDeviceContext->rumbleRequest, WdfUsbTargetPipeGetIoTarget(apDeviceContext->interruptWritePipe), NULL);
 
 Exit:
 	//FIXME add tracing?
@@ -115,21 +132,19 @@ NTSTATUS GCN_Controller_Rumble(PDEVICE_CONTEXT _In_ apDeviceContext, int _In_ aI
 	NTSTATUS status = STATUS_BAD_DATA;
 	if (aIndex < 4)
 	{
-		BYTE rumble = 0, i;
+		BYTE rumble = apDeviceContext->rumbleStatus;
 		
 		if (aIndex < 0)
 		{
-			i = 0;
-			aIndex = 4;
+			rumble = aRumble ? 0xf : 0;
+		}
+		else if (aRumble)
+		{
+			rumble |= 1 << aIndex;
 		}
 		else
 		{
-			i = aIndex++;
-		}
-		
-		for (; i < aIndex ; ++i)
-		{
-			rumble |= !!aRumble << i;
+			rumble &= ~(1 << aIndex);
 		}
 
 		status = GCN_Adapter_Rumble(apDeviceContext, rumble);
@@ -256,12 +271,6 @@ void prepare_report(
 		{
 			GCN_Controller_Calibrate(apDeviceContext, id - 1);
 			apDeviceContext->controllerStatus[id - 1].lastControllerState = 1;
-		}
-
-		//Turn rumble off if it is enabled and power is removed
-		if (apDeviceContext->controllerStatus[id - 1].rumble && !data.port[id-1].status.powered)
-		{
-			GCN_Controller_Rumble(apDeviceContext, id - 1, 0);
 		}
 	}
 

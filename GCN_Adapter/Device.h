@@ -31,6 +31,7 @@ typedef struct _DEVICE_CONTEXT
 	GCN_Controller_Status controllerStatus[4]; //Latest controller state
 	WDFREQUEST rumbleRequest; //async data to enable rumble
 	WDFMEMORY rumbleMemory;
+	BYTE rumbleStatus; //Convenient cache of rumble status
 
 } DEVICE_CONTEXT, *PDEVICE_CONTEXT;
 
