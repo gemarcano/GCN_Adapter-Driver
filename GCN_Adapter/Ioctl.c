@@ -525,7 +525,7 @@ NTSTATUS GCN_AdapterCalibrate(
 	_In_ WDFREQUEST aRequest)
 {
 	WDF_REQUEST_PARAMETERS params;
-	PUCHAR pData;
+	IOCTL_GCN_Adapter_Calibrate_Data *pData;
 	PDEVICE_CONTEXT devContext = DeviceGetContext(aDevice);
 	NTSTATUS status = STATUS_SUCCESS;
 	UCHAR i;
@@ -553,7 +553,7 @@ NTSTATUS GCN_AdapterCalibrate(
 		return status;
 	}
 
-	if ((0x0f & *pData) == 0x0f)
+	if ((pData->controllers) == 0x0f)
 	{
 		status = GCN_Controller_Calibrate(devContext, -1);
 	}
@@ -562,7 +562,7 @@ NTSTATUS GCN_AdapterCalibrate(
 		status = STATUS_SUCCESS;
 		for (i = 0; i < 4 && NT_SUCCESS(status); ++i)
 		{
-			if ((1 << i) & *pData)
+			if ((1 << i) & pData->controllers)
 			{
 				status = GCN_Controller_Calibrate(devContext, i);
 			}

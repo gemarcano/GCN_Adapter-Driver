@@ -23,8 +23,8 @@ DEFINE_GUID(GUID_DEVINTERFACE_GCN_ADAPTER,
 //Takes in a single byte, with the first four bits identifying which controllers to calibrate
 typedef struct _IOCTL_GCN_Adapter_Rumble_Data
 {
-	BYTE: 4;
 	BYTE controllers : 4;
+	BYTE: 4;
 } IOCTL_GCN_Adapter_Calibrate_Data;
 #define IOCTL_GCN_ADAPTER_CALIBRATE CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_BUFFERED, FILE_WRITE_DATA)
 
