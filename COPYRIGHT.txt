@@ -1,0 +1,3 @@
+Copyright 2015 Gabriel Marcano
+
+This software is distributed under both the LGPLv3 and the GPLv2 or later. See the Copying* files for more details on the specific licenses.
