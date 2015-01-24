@@ -1,6 +1,7 @@
-------------------------------------
+________________________________________________________________________________
 Setup
-------------------------------------
+________________________________________________________________________________
+
 After building the driver from source, depending on your architecture, navigate
 to "%ARCH%\%Windows Version%\GCN_Adapter Package" and verify that the following
 files are there: 	
@@ -13,9 +14,10 @@ If so, the driver is ready to be installed. If not, try recompiling the
 driver. These files should be put there by the compilation process, so make
 sure Visual Studio 2013 is installed properly and that WDK 8.1 is installed.
 
-------------------------------------
+________________________________________________________________________________
 Windows Test Mode
-------------------------------------
+________________________________________________________________________________
+
 One of the problems with the driver is that it is not signed by default. This
 will cause for it to not be installable in modern Windows systems. The only
 way to get around this limitation is to make Windows enter into Test mode.
@@ -34,9 +36,10 @@ driver checking, do:
 These commands will allow Windows to resume normal operation. This will also 
 prevent the driver from working, since it is not signed.
 
-------------------------------------
+________________________________________________________________________________
 Installation (Requires Windows Test Mode)
-------------------------------------
+________________________________________________________________________________
+
 Plug in the adapter and watch Windows fail to find a driver. If at any time 
 Windows asks you for an installation disk or something of the sort, the 
 "GCN_Adapter Package" directory is that installation disk. Select "Have disk" 
@@ -62,9 +65,10 @@ directory and select the GCN_Adapter.inf file. Windows will complain about the
 driver being unsigned, but select to continue with the installation. That 
 should be it!
 
-------------------------------------
+________________________________________________________________________________
 Testing
-------------------------------------
+________________________________________________________________________________
+
 To make sure that the driver is loaded properly, in the device manager there 
 should be 4 new HID controllers under the "Human Interface Devices" list, and 
 there should be one "Gamecube Controller Adapter" listed. To test the 
