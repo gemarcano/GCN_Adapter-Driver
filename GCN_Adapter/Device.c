@@ -5,8 +5,9 @@
 #pragma alloc_text (PAGE, GCN_AdapterCreateDevice)
 #pragma alloc_text (PAGE, GCN_AdapterEvtDevicePrepareHardware)
 #pragma alloc_text (PAGE, SelectInterfaces)
-#pragma alloc_text (PAGE, GCN_AdapterSetPowerPolicy)
+#pragma alloc_text (PAGE, GCN_AdapterPnPInitialize)
 #pragma alloc_text (PAGE, GCN_AdapterQueueInitialize)
+#pragma alloc_text (PAGE, GCN_AdapterEvtDeviceSelfManagedIoFlush)
 #endif
 
 NTSTATUS GCN_AdapterCreateDevice(
@@ -328,40 +329,6 @@ NTSTATUS GCN_AdapterPnPInitialize(
 	pnpPowerCallbacks.EvtDeviceSelfManagedIoFlush = GCN_AdapterEvtDeviceSelfManagedIoFlush;
 
 	WdfDeviceInitSetPnpPowerEventCallbacks(aDeviceInit, &pnpPowerCallbacks);
-
-	return status;
-}
-
-_IRQL_requires_(PASSIVE_LEVEL)
-NTSTATUS GCN_AdapterSetPowerPolicy(
-	_In_ WDFDEVICE aDevice)
-{
-	WDF_DEVICE_POWER_POLICY_IDLE_SETTINGS idleSettings;
-	WDF_DEVICE_POWER_POLICY_WAKE_SETTINGS wakeSettings;
-	NTSTATUS    status = STATUS_SUCCESS;
-
-	PAGED_CODE();
-
-	WDF_DEVICE_POWER_POLICY_IDLE_SETTINGS_INIT(&idleSettings, IdleUsbSelectiveSuspend);
-	idleSettings.IdleTimeout = 10000; //in milliseconds
-
-	status = WdfDeviceAssignS0IdleSettings(aDevice, &idleSettings);
-	if (!NT_SUCCESS(status))
-	{
-		TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE,
-			"WdfDeviceSetPowerPolicyS0IdlePolicy failed %x\n", status);
-		return status;
-	}
-
-	WDF_DEVICE_POWER_POLICY_WAKE_SETTINGS_INIT(&wakeSettings);
-
-	status = WdfDeviceAssignSxWakeSettings(aDevice, &wakeSettings);
-	if (!NT_SUCCESS(status))
-	{
-		TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE,
-			"WdfDeviceAssignSxWakeSettings failed %x\n", status);
-		return status;
-	}
 
 	return status;
 }

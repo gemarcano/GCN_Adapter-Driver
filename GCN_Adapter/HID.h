@@ -13,6 +13,9 @@ extern CONST HID_DESCRIPTOR HIDDescriptor;
  *
  *	@param aIoControlCode IOCTL code.
  *
+ *	@remark This function can run at any IRQL (is this true?).
+ *	@remark This function is not paged.
+ *
  *	@returns C string representation of the given IOCTL code.
  *
  */

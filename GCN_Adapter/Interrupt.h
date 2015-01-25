@@ -8,6 +8,10 @@
  *
  *	@param [in] apDeviceContext Device context where to store data.
  *
+ *	@remark This function runs at IRQL == PASSIVE_LEVEL since it is called by
+ *		GCN_AdapterEvtDevicePrepareHardware.
+ *	@remark This function is paged in page PAGE.
+ *
  *	@returns NTSTATUS. @See
  *		http://msdn.microsoft.com/en-us/library/cc704588.aspx for details.
  */
@@ -21,6 +25,10 @@ NTSTATUS GCN_AdapterConfigContReaderForInterruptEndPoint(
  *	@param [in] aBuffer Memory with results of read.
  *	@param [in] aNumBytesTransferred Amount of data read.
  *	@param [in] aContext Device context where to store data.
+ *
+ *	@remark This function runs at IRQL <= DISPATCH_LEVEL by the framework since
+ *		it runs at the level the IO operation was completed in.
+ *	@remark This function is not paged.
  *
  *	@post Data read is stored in device context.
  *
@@ -36,6 +44,9 @@ VOID GCN_AdapterEvtUsbInterruptPipeReadComplete(
  *	@param [in] aPipe Pipe from which data should have been read.
  *	@param [in] aStatus Indicates why reading failed.
  *	@param [in] aUsbdStatus ?FIXME
+ *
+ *	@remark This function runs at IRQL == PASSIVE_LEVEL by the framework.
+ *	@remark This function is not paged (...why?).
  *
  *	@post FIXME TODO Determine what exactly should happen here...
  *

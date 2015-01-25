@@ -3,7 +3,7 @@
 
 #ifdef ALLOC_PRAGMA
 #pragma alloc_text (INIT, DriverEntry)
-#pragma alloc_text (PAGE, GCN_AdapterEvtDeviceAdd)
+#pragma alloc_text (PAGE, GCN_AdapterEvtDriverDeviceAdd)
 #pragma alloc_text (PAGE, GCN_AdapterEvtDriverContextCleanup)
 #endif
 
@@ -26,7 +26,7 @@ NTSTATUS DriverEntry(
 	WDF_OBJECT_ATTRIBUTES_INIT(&attributes);
 	attributes.EvtCleanupCallback = GCN_AdapterEvtDriverContextCleanup;
 
-	WDF_DRIVER_CONFIG_INIT(&config, GCN_AdapterEvtDeviceAdd);
+	WDF_DRIVER_CONFIG_INIT(&config, GCN_AdapterEvtDriverDeviceAdd);
 	
 	status = WdfDriverCreate(
 		aDriverObject,
@@ -47,7 +47,7 @@ NTSTATUS DriverEntry(
 	return status;
 }
 
-NTSTATUS GCN_AdapterEvtDeviceAdd(
+NTSTATUS GCN_AdapterEvtDriverDeviceAdd(
 	_In_    WDFDRIVER       aDriver,
 	_Inout_ PWDFDEVICE_INIT aDeviceInit)
 {

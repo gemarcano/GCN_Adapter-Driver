@@ -10,6 +10,9 @@
  *	@param [in] aDevice USB Device created by GCN_AdapterCreateDevice.
  *	@param [in] aPreviousState Previous power state.
  *
+ *	@remark This function runs at IRQL == PASSIVE_LEVEL by the framework.
+ * 	@remark This function is not paged by requirement from the framework.
+ *
  *	@returns NTSTATUS. @See
  *		http://msdn.microsoft.com/en-us/library/cc704588.aspx for details.
  *
@@ -20,6 +23,9 @@ EVT_WDF_DEVICE_D0_ENTRY GCN_AdapterEvtDeviceD0Entry;
  *
  *	@param [in] aDevice USB Device created by GCN_AdapterCreateDevice.
  *	@param [in] aTargetState State of power transitioning to.
+ *
+ *	@remark This function runs at IRQL == PASSIVE_LEVEL by the framework.
+ * 	@remark This function is paged in page PAGE.
  *
  *	@returns NTSTATUS. @See
  *		http://msdn.microsoft.com/en-us/library/cc704588.aspx for details.

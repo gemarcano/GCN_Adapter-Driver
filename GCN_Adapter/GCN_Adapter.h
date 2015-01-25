@@ -20,18 +20,22 @@ DEFINE_GUID(GUID_DEVINTERFACE_GCN_ADAPTER,
 	0x902e89e4, 0x5a4c, 0x41e9, 0xb3, 0x27, 0xa3, 0xf1, 0xcb, 0x31, 0x38, 0x2b);
 // {902e89e4-5a4c-41e9-b327-a3f1cb31382b}
 
-//Takes in a single byte, with the first four bits identifying which controllers to calibrate
+//Takes in a single byte, with the first four bits identifying which controllers
+//to calibrate.
 typedef struct _IOCTL_GCN_Adapter_Rumble_Data
 {
 	BYTE controllers : 4;
 	BYTE: 4;
 } IOCTL_GCN_Adapter_Calibrate_Data;
-#define IOCTL_GCN_ADAPTER_CALIBRATE CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_BUFFERED, FILE_WRITE_DATA)
+#define IOCTL_GCN_ADAPTER_CALIBRATE CTL_CODE(\
+	FILE_DEVICE_UNKNOWN, 0x800, METHOD_BUFFERED, FILE_WRITE_DATA)
 
-//Takes in a single byte, with the first four bits identifying which controllers to rumble
+//Takes in a single byte, with the first four bits identifying which controllers
+//to rumble
 typedef IOCTL_GCN_Adapter_Calibrate_Data IOCTL_GCN_Adapter_Rumble_Data;
 
-#define IOCTL_GCN_ADAPTER_SET_RUMBLE CTL_CODE(FILE_DEVICE_UNKNOWN, 0x801, METHOD_BUFFERED, FILE_WRITE_DATA)
+#define IOCTL_GCN_ADAPTER_SET_RUMBLE CTL_CODE(\
+	FILE_DEVICE_UNKNOWN, 0x801, METHOD_BUFFERED, FILE_WRITE_DATA)
 
 //Options for deadzone management
 #define IOCTL_GCN_ADAPTER_DEADZONE_IGNORE 0xFF
@@ -60,8 +64,10 @@ typedef struct _IOCTL_GCN_Adapter_Deadzone_Data
 	
 } IOCTL_GCN_Adapter_Deadzone_Data;
 
-#define IOCTL_GCN_ADAPTER_SET_DEADZONE CTL_CODE(FILE_DEVICE_UNKNOWN, 0x802, METHOD_BUFFERED, FILE_WRITE_DATA)
+#define IOCTL_GCN_ADAPTER_SET_DEADZONE CTL_CODE(\
+	FILE_DEVICE_UNKNOWN, 0x802, METHOD_BUFFERED, FILE_WRITE_DATA)
 
-#define IOCTL_GCN_ADAPTER_GET_DEADZONE CTL_CODE(FILE_DEVICE_UNKNOWN, 0x803, METHOD_BUFFERED, FILE_READ_DATA)
+#define IOCTL_GCN_ADAPTER_GET_DEADZONE CTL_CODE(\
+	FILE_DEVICE_UNKNOWN, 0x803, METHOD_BUFFERED, FILE_READ_DATA)
 
 #endif//_GCN_ADAPTER_H_

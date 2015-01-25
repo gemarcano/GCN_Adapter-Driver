@@ -99,7 +99,7 @@ VOID GCN_AdapterEvtIoWrite(
 
 	WdfRequestSetCompletionRoutine(
 		aRequest,
-		EvtRequestWriteCompletionRoutine,
+		GCN_AdapterEvtRequestWriteCompletionRoutine,
 		pipe);
 
 	if (WdfRequestSend(aRequest, WdfUsbTargetPipeGetIoTarget(pipe), WDF_NO_SEND_OPTIONS) == FALSE)
@@ -121,7 +121,7 @@ Exit:
 	return;
 }
 
-VOID EvtRequestWriteCompletionRoutine(
+VOID GCN_AdapterEvtRequestWriteCompletionRoutine(
 	_In_ WDFREQUEST aRequest,
 	_In_ WDFIOTARGET aTarget,
 	_In_ PWDF_REQUEST_COMPLETION_PARAMS aCompletionParams,

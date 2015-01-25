@@ -11,6 +11,9 @@
  *	@param[in] aLength Length of the read buffer. For this driver, this has to
  *		be 37 bytes (full length of the data).
  *
+  *	@remark This function runs at IRQL <= DISPATCH_LEVEL by the framework.
+ *	@remark This function is not paged.
+ *
  *	@post Request is handled asynchronously.
  *
  */
@@ -20,31 +23,37 @@ VOID GCN_AdapterEvtIoRead(
 	_In_ size_t aLength);
 
 /**	Handles Write requests. Writes data to device (rumble).
-*
-*	@param[in] aQueue Queue from which the request came.
-*	@param[in] aRequest Read request.
-*	@param[in] aLength Length of the write buffer. For this driver, this has to
-*		be 5 bytes (full length of the rumble data).
-*
-*	@post Request is handled asynchronously.
-*
-*/
+ *
+ *	@param[in] aQueue Queue from which the request came.
+ *	@param[in] aRequest Read request.
+ *	@param[in] aLength Length of the write buffer. For this driver, this has to
+ *		be 5 bytes (full length of the rumble data).
+ *
+ *	@remark This function runs at IRQL <= DISPATCH_LEVEL by the framework.
+ * 	@remark This function is not paged.
+ *
+ *	@post Request is handled asynchronously.
+ *
+ */
 VOID GCN_AdapterEvtIoWrite(
 	_In_ WDFQUEUE aQueue,
 	_In_ WDFREQUEST aRequest,
 	_In_ size_t	aLength);
 
 /**	Finishes handling Write requests.
-*
-*	@param[in] aRequest Write request.
-*	@param[in] aTarget ?FIXME
-*	@param[in] aCompletionParams Completion parameters from the request.
-*	@param[in] aContext Device context.
-*
-*	@post Request is handled.
-*
-*/
-VOID EvtRequestWriteCompletionRoutine(
+ *
+ *	@param[in] aRequest Write request.
+ *	@param[in] aTarget ?FIXME
+ *	@param[in] aCompletionParams Completion parameters from the request.
+ *	@param[in] aContext Device context.
+ *
+ *	@remark This function runs at IRQL <= DISPATCH_LEVEL by the framework.
+ *	@remark This function is not paged.
+ *
+ *	@post Request is handled.
+ *
+ */
+VOID GCN_AdapterEvtRequestWriteCompletionRoutine(
 	_In_ WDFREQUEST aRequest,
 	_In_ WDFIOTARGET aTarget,
 	_In_ PWDF_REQUEST_COMPLETION_PARAMS aCompletionParams,
@@ -56,6 +65,9 @@ VOID EvtRequestWriteCompletionRoutine(
  *	@param [in] aRequest ?FIXME
  *	@param [in] aActionFlags Some WDF_REQUEST_STOP_ACTION_FLAGS (bitwise ORed)
  *		that explain why this callback is being called.
+ *
+ *	@remark This function runs at IRQL <= DISPATCH_LEVEL by the framework.
+ *	@remark This function is not paged.
  *
  *	@post ?FIXME
  *

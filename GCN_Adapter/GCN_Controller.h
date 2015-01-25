@@ -8,12 +8,14 @@ typedef struct _DEVICE_CONTEXT DEVICE_CONTEXT;
 
 enum GCN_Controller_Axis
 {
-	GCN_Controller_Axis_Left = 0, GCN_Controller_Axis_Right = 1, GCN_Controller_Axis_SIZE = 2
+	GCN_Controller_Axis_Left = 0, GCN_Controller_Axis_Right = 1,
+	GCN_Controller_Axis_SIZE = 2
 };
 
 enum GCN_Controller_Shoulder
 {
-	GCN_Controller_Shoulder_Left = 0, GCN_Controller_Shoulder_Right = 1, GCN_Controller_Shoulder_SIZE = 2
+	GCN_Controller_Shoulder_Left = 0, GCN_Controller_Shoulder_Right = 1,
+	GCN_Controller_Shoulder_SIZE = 2
 };
 
 //Describes the incoming data for the controller
@@ -96,31 +98,54 @@ typedef struct _GCN_Controller_Status
 	GCN_Controller_Deadzone_Status deadzone;
 	BYTE rumble;
 
-	void(*function_axis[2])(BYTE axis[2], BYTE zero[2], double center[2], double sensitivity);
-	void(*function_shoulder[2])(BYTE *axis, BYTE zero, double center, double sensitivity);
+	void(*function_axis[2])(
+		BYTE axis[2], BYTE zero[2], double center[2], double sensitivity);
+	void(*function_shoulder[2])(
+		BYTE *axis, BYTE zero, double center, double sensitivity);
 
 } GCN_Controller_Status;
 
-/**	@brief
+/**	@brief Initializes the data  of a Controller's status variable to default
+ *		values (which are?).
+ *
+ *	@remark This function can run at any IRQL (is this true?). Do make sure that
+ *		the data being passed into the function is not paged out if running at
+ *		an IRQL > PASSIVE_LEVEL.
+ *	@remark This function is not paged.
+ *
+ *	@post The data structure passed in is initialized to default values.
  *
  */
 void GCN_Controller_Status_Init(GCN_Controller_Status *aControllerStatus);
 
-/**	@brief
-*
-*/
+/**	@brief Updates the deadzone parameters (deadzone sensitivity and operating
+ *		mode).
+ *
+ *	@remark This function can run at any IRQL (is this true?). Do make sure that
+ *		the data being passed into the function is not paged out if running at
+ *		an IRQL > PASSIVE_LEVEL.
+ *	@remark This function is not paged.
+ *
+ */
 void GCN_Controller_Status_Update_Deadzone(
 	GCN_Controller_Status *aControllerStatus,
 	GCN_Controller_Deadzone_Status *aNewStatus);
 
-/**	@brief
-*
-*/
+/**	@brief Uses the lower four bytes of aRumble to determine the current status
+ *		of each of the controllers' rumble and updates them accordingly.
+ *
+ *	@remark This function can run at any IRQL <= DISPATCH_LEVEL.
+ *	@remark This function is not paged.
+ *
+ */
 NTSTATUS GCN_Adapter_Rumble(DEVICE_CONTEXT *apDeviceContext, BYTE aRumble);
 
-/**	@brief
-*
-*/
+/**	@brief Triggers rumble for the specified controller at index [0, 3].
+ *
+ *	@remark This function can run at any IRQL <= DISPATCH_LEVEL.
+ *	@remark This function is not paged.
+ *
+ */
 NTSTATUS GCN_Controller_Rumble(
 	DEVICE_CONTEXT *apDeviceContext, int aIndex, BOOLEAN aRumble);
 
@@ -130,16 +155,22 @@ NTSTATUS GCN_Controller_Rumble(
  *	@param [in] aIndex Index of port to calibrate [ 0, 3 ]. A -1 indicates to
  *		calibrate all ports.
  *
+ *	@remark This function can run at any IRQL <= DISPATCH_LEVEL.
+ *	@remark This function is not paged.
+ *
  *	@returns NTSTATUS. @See
  *		http://msdn.microsoft.com/en-us/library/cc704588.aspx for details.
  *
-*/
+ */
 NTSTATUS GCN_Controller_Calibrate(
 	DEVICE_CONTEXT _In_ *pDeviceContext, int _In_ aIndex);
 
-/**	@brief
-*
-*/
+/**	@brief Prepares a controller report to return to the upper HID minidriver.
+ *
+ *	@remark This function can run at any IRQL <= DISPATCH_LEVEL.
+ *	@remark This function is not paged.
+ *
+ */
 void prepare_report(
 	DEVICE_CONTEXT *apDeviceContext,
 	GCN_AdapterData *in,
