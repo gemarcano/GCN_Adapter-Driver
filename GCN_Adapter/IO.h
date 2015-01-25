@@ -2,6 +2,12 @@
 #ifndef _GCN_ADAPTER_IO_H_
 #define _GCN_ADAPTER_INCLUDE_H_
 
+/**	@file
+ *	This file contains function and variable declarations/definitions regarding
+ *	read and write requests.
+ *
+ */
+
 #include "Include.h"
 
 /**	Handles Read requests. Returns data from adaptor to request.

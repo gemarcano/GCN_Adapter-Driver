@@ -2,6 +2,12 @@
 #ifndef _GCN_ADAPTER_DRIVER_H_
 #define _GCN_ADAPTER_DRIVER_H_
 
+/**	@file
+ *	This file contains function and variable declarations/definitions regarding
+ *	driver specific functionality, such as initialization and teardown.
+ *
+ */
+
 #define INITGUID
 
 #include "Include.h"

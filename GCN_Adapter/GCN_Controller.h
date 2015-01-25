@@ -2,6 +2,12 @@
 #ifndef _GCN_ADAPTOR_GCN_CONTROLLER_H_
 #define _GCN_ADAPTOR_GCN_CONTROLLER_H_
 
+/**	@file
+ *	This file contains function and variable declarations/definitions regarding
+ *	controller specific functionality.
+ *
+ */
+
 #include "Include.h"
 
 typedef struct _DEVICE_CONTEXT DEVICE_CONTEXT;

@@ -2,6 +2,12 @@
 #ifndef _GCN_ADAPTOR_INTERRUPT_H_
 #define _GCN_ADAPTOR_INTERRUPT_H_
 
+/**	@file
+ *	This file contains function and variable declarations/definitions regarding
+ *	USB interrupt pipe functionality and callbacks.
+ *
+ */
+
 #include "Include.h"
 
 /**	Configures the continuous interrupt pipe reader for getting controller data.

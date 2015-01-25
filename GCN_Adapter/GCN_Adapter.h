@@ -1,10 +1,13 @@
-//
-// Define an Interface Guid so that app can find the device and talk to it.
-//
 #pragma once 
 #ifndef _GCN_ADAPTER_H_
 #define _GCN_ADAPTER_H_
 
+/**	@file
+ *	This file contains data declarations that are global to the driver. This
+ *	file can be included in user-mode programs to help in finding the driver
+ *	interface for DeviceIoControl calls.
+ *
+ */
 
 #include <guiddef.h>
 #ifdef _GCN_ADAPTER_DRIVER_ 

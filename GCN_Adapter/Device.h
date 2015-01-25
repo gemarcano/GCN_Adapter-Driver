@@ -2,6 +2,12 @@
 #ifndef _GCN_ADAPTER_DEVICE_H_
 #define _GCN_ADAPTER_DEVICE_H_
 
+/**	@file
+ *	This file contains function and variable declarations/definitions regarding
+ *	device specific functionality, such as initialization and teardown.
+ *
+ */
+
 #include "Include.h"
 #include "GCN_Adapter.h"
 #include "GCN_Controller.h"
@@ -93,7 +99,6 @@ EVT_WDF_DEVICE_PREPARE_HARDWARE GCN_AdapterEvtDevicePrepareHardware;
  *		http://msdn.microsoft.com/en-us/library/cc704588.aspx for details.
  *
  */
-_IRQL_requires_(PASSIVE_LEVEL)
 NTSTATUS SelectInterfaces(_In_ WDFDEVICE aDevice);
 
 /**	Prepares the USB device with PnP related settings.

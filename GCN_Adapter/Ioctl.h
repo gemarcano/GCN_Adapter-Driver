@@ -2,6 +2,12 @@
 #ifndef _GCN_ADAPTER_IOCTL_H_
 #define _GCN_ADAPTER_IOCTL_H_
 
+/**	@file
+*	This file contains function and variable declarations/definitions regarding
+*	IOCTL handling.
+*
+*/
+
 #include "Include.h"
 
 /**	Handles the completion of pended IOCTL requests (READ_REPORT).

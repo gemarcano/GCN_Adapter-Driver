@@ -2,6 +2,12 @@
 #ifndef _GCN_ADAPTER_POWER_H_
 #define _GCN_ADAPTER_POWER_H_
 
+/**	@file
+*	This file contains function and variable declarations/definitions regarding
+*	device power state management.
+*
+*/
+
 #include "Include.h"
 
 /**	Handles entering powered up mode of operation. This function is nonpaged.

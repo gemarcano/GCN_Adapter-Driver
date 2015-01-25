@@ -2,6 +2,12 @@
 #ifndef _GCN_ADAPTER_HID_H_
 #define _GCN_ADAPTER_HID_H_
 
+/**	@file
+ *	This file contains function and variable declarations/definitions regarding
+ *	HID specific information.
+ *
+ */
+
 #include "Include.h"
 
 typedef UCHAR HID_REPORT_DESCRIPTOR, *PHID_REPORT_DESCRIPTOR;

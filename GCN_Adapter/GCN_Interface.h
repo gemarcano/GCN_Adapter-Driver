@@ -2,6 +2,12 @@
 #ifndef _GCN_INTERFACE_H_
 #define _GCN_INTERFACE_H_
 
+/**	@file
+ *	This file contains function and variable declarations/definitions regarding
+ *	the device interface the driver exposes.
+ *
+ */
+
 #include "Include.h"
 
 #define GCN_ADAPTER_DEVICE_ID L"USB\\VID_057E&PID_0337&REV_0100\0"
