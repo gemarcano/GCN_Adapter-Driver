@@ -7,10 +7,10 @@
 #pragma alloc_text (PAGE, GCN_AdapterEvtDriverContextCleanup)
 #endif
 
-_IRQL_requires_(PASSIVE_LEVEL)
+_Use_decl_annotations_
 NTSTATUS DriverEntry(
-	_In_ PDRIVER_OBJECT  aDriverObject,
-	_In_ PUNICODE_STRING aRegistryPath)
+	PDRIVER_OBJECT  aDriverObject,
+	PUNICODE_STRING aRegistryPath)
 {
 	WDF_DRIVER_CONFIG config;
 	NTSTATUS status;
@@ -49,10 +49,10 @@ NTSTATUS DriverEntry(
 	return status;
 }
 
-_IRQL_requires_(PASSIVE_LEVEL)
+_Use_decl_annotations_
 NTSTATUS GCN_AdapterEvtDriverDeviceAdd(
-	_In_    WDFDRIVER       aDriver,
-	_Inout_ PWDFDEVICE_INIT aDeviceInit)
+	WDFDRIVER       aDriver,
+	PWDFDEVICE_INIT aDeviceInit)
 {
 	NTSTATUS status;
 
@@ -80,9 +80,9 @@ Exit:
 	return status;
 }
 
-_IRQL_requires_(PASSIVE_LEVEL)
+_Use_decl_annotations_
 VOID GCN_AdapterEvtDriverContextCleanup(
-	_In_ WDFOBJECT DriverObject)
+	WDFOBJECT DriverObject)
 {
 	UNREFERENCED_PARAMETER(DriverObject);
 

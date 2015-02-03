@@ -31,7 +31,7 @@ PCHAR DbgDevicePowerString(_In_ WDF_POWER_DEVICE_STATE Type)
 	}
 }
 
-_IRQL_requires_(PASSIVE_LEVEL)
+_Use_decl_annotations_
 NTSTATUS GCN_AdapterEvtDeviceD0Entry(
 	WDFDEVICE aDevice, WDF_POWER_DEVICE_STATE aPreviousState)
 {
@@ -49,7 +49,7 @@ NTSTATUS GCN_AdapterEvtDeviceD0Entry(
 	//Start the continuous reader here...
 	status = WdfIoTargetStart(
 		WdfUsbTargetPipeGetIoTarget(pDeviceContext->interruptReadPipe));
-	status = STATUS_SUCCESS;
+	
 	if (!NT_SUCCESS(status))
 	{
 		TraceEvents(TRACE_LEVEL_ERROR, TRACE_POWER,
@@ -78,10 +78,10 @@ End:
 	return status;
 }
 
-_IRQL_requires_(PASSIVE_LEVEL)
+_Use_decl_annotations_
 NTSTATUS GCN_AdapterEvtDeviceD0Exit(
-	_In_ WDFDEVICE aDevice,
-	_In_ WDF_POWER_DEVICE_STATE aTargetState)
+	WDFDEVICE aDevice,
+	WDF_POWER_DEVICE_STATE aTargetState)
 {
 	PDEVICE_CONTEXT pDeviceContext;
 

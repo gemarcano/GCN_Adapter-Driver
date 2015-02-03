@@ -41,11 +41,7 @@ NTSTATUS GCN_AdapterConfigContReaderForInterruptEndPoint(
  *
  */
 _IRQL_requires_max_(DISPATCH_LEVEL)
-VOID GCN_AdapterEvtUsbInterruptPipeReadComplete(
-	_In_ WDFUSBPIPE aPipe,
-	_In_ WDFMEMORY aBuffer,
-	_In_ size_t aNumBytesTransferred,
-	_In_ WDFCONTEXT aContext);
+EVT_WDF_USB_READER_COMPLETION_ROUTINE GCN_AdapterEvtUsbInterruptPipeReadComplete;
 
 /**	Handles the case when the continuous reader fails to read.
  *
@@ -60,9 +56,6 @@ VOID GCN_AdapterEvtUsbInterruptPipeReadComplete(
  *
  */
 _IRQL_requires_(PASSIVE_LEVEL)
-BOOLEAN GCN_AdapterEvtUsbInterruptReadersFailed(
-	_In_ WDFUSBPIPE aPipe,
-	_In_ NTSTATUS aStatus,
-	_In_ USBD_STATUS aUsbdStatus);
+EVT_WDF_USB_READERS_FAILED GCN_AdapterEvtUsbInterruptReadersFailed;
 
 #endif//_GCN_ADAPTOR_INTERRUPT_H_

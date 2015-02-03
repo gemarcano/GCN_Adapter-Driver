@@ -1,11 +1,11 @@
 #include "Include.h"
 #include "io.tmh"
 
-_IRQL_requires_max_(DISPATCH_LEVEL)
+_Use_decl_annotations_
 VOID GCN_AdapterEvtIoRead(
-	_In_ WDFQUEUE Queue,
-	_In_ WDFREQUEST Request,
-	_In_ size_t Length)
+	WDFQUEUE Queue,
+	WDFREQUEST Request,
+	size_t Length)
 {
 	WDFUSBPIPE pipe;
 	NTSTATUS status;
@@ -53,11 +53,11 @@ Exit:
 	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_IO, "<-- GCN_AdapterEvtIoRead\n");
 }
 
-_IRQL_requires_max_(DISPATCH_LEVEL)
+_Use_decl_annotations_
 VOID GCN_AdapterEvtIoWrite(
-	_In_ WDFQUEUE aQueue,
-	_In_ WDFREQUEST aRequest,
-	_In_ size_t aLength)
+	WDFQUEUE aQueue,
+	WDFREQUEST aRequest,
+	size_t aLength)
 {
 	NTSTATUS status;
 	WDFUSBPIPE pipe;
@@ -131,12 +131,12 @@ Exit:
 	return;
 }
 
-_IRQL_requires_max_(DISPATCH_LEVEL)
+_Use_decl_annotations_
 VOID GCN_AdapterEvtRequestWriteCompletionRoutine(
-	_In_ WDFREQUEST aRequest,
-	_In_ WDFIOTARGET aTarget,
-	_In_ PWDF_REQUEST_COMPLETION_PARAMS aCompletionParams,
-	_In_ WDFCONTEXT aContext)
+	WDFREQUEST aRequest,
+	WDFIOTARGET aTarget,
+	PWDF_REQUEST_COMPLETION_PARAMS aCompletionParams,
+	WDFCONTEXT aContext)
 {
 	NTSTATUS status;
 	size_t bytesWritten = 0;

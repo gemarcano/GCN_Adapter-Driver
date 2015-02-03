@@ -3,10 +3,13 @@
 
 static void null_handle_shoulder(
 	BYTE *axis, BYTE zero, double center, double sensitivity) {}
+
 static void null_handle_axis(
 	BYTE axis[2], BYTE zero[2], double center[2], double sensitivity) {}
+
 static void linear_handle_shoulder(
 	BYTE *axis, BYTE zero, double center, double sensitivity);
+
 static void linear_handle_axis(
 	BYTE axis[2], BYTE zero[2], double center[2], double sensitivity);
 
@@ -30,16 +33,16 @@ GCN_Controller_Status GCN_Controller_Status_Zero =
 	.function_shoulder = { linear_handle_shoulder, linear_handle_shoulder}
 };
 
-_IRQL_requires_min_(PASSIVE_LEVEL)
-void GCN_Controller_Status_Init(_Out_ GCN_Controller_Status *aControllerStatus)
+_Use_decl_annotations_
+void GCN_Controller_Status_Init(GCN_Controller_Status *aControllerStatus)
 {
 	*aControllerStatus = GCN_Controller_Status_Zero;
 }
 
-_IRQL_requires_min_(PASSIVE_LEVEL)
+_Use_decl_annotations_
 void GCN_Controller_Status_Update_Deadzone(
-	_Out_ GCN_Controller_Status *apControllerStatus,
-	_In_ GCN_Controller_Deadzone_Status *apNewStatus)
+	GCN_Controller_Status *apControllerStatus,
+	GCN_Controller_Deadzone_Status *apNewStatus)
 {
 	int i = 0;
 	apControllerStatus->deadzone = *apNewStatus;
@@ -81,20 +84,32 @@ static GCN_ControllerReport GCN_AdapterControllerZero = {
 	.input.shoulder = { 0, 0 }
 };
 
+EVT_WDF_REQUEST_COMPLETION_ROUTINE GCN_Adapter_Rumble_Completion;
+
+_Use_decl_annotations_
 void GCN_Adapter_Rumble_Completion(
-	_In_  WDFREQUEST aRequest,
-	_In_  WDFIOTARGET aTarget,
-	_In_  PWDF_REQUEST_COMPLETION_PARAMS apParams,
-	_In_  WDFCONTEXT aContext)
+	WDFREQUEST aRequest,
+	WDFIOTARGET aTarget,
+	PWDF_REQUEST_COMPLETION_PARAMS apParams,
+	WDFCONTEXT aContext)
 {
+	WDF_REQUEST_COMPLETION_PARAMS params;
 	NTSTATUS status = WdfRequestGetStatus(aRequest);
+	if (!NT_SUCCESS(status))
+	{
+		goto Exit;
+	}
+
+	WdfRequestGetCompletionParams(aRequest, &params);
 	//TODO do something, tracing, error checking?
 	//How about updating rumble status?
+Exit:
+	return;
 }
 
-_IRQL_requires_max_(DISPATCH_LEVEL)
+_Use_decl_annotations_
 NTSTATUS GCN_Adapter_Rumble(
-	_In_ PDEVICE_CONTEXT apDeviceContext, _In_ BYTE aRumble)
+	PDEVICE_CONTEXT apDeviceContext, BYTE aRumble)
 {
 	NTSTATUS status;
 	GCN_AdapterData adapterData;
@@ -144,11 +159,15 @@ NTSTATUS GCN_Adapter_Rumble(
 			GCN_Adapter_Rumble_Completion,
 			NULL);
 
-		WdfRequestSend(
+		if (!WdfRequestSend(
 			apDeviceContext->rumbleRequest,
 			WdfUsbTargetPipeGetIoTarget(apDeviceContext->interruptWritePipe),
-			NULL);
-		
+			NULL))
+		{
+			status = WdfRequestGetStatus(apDeviceContext->rumbleRequest);
+			goto Exit;
+		}
+
 		apDeviceContext->rumbleStatus = newStatus; //FIXME Should it be protected?
 	}
 	else
@@ -157,15 +176,18 @@ NTSTATUS GCN_Adapter_Rumble(
 	}
 
 Exit:
-	TraceEvents(TRACE_LEVEL_ERROR, TRACE_GCN_CONTROLLER,
-		"%!FUNC! failed with status %!STATUS!!", status);
+	if (!NT_SUCCESS(status))
+	{
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_GCN_CONTROLLER,
+			"%!FUNC! failed with status %!STATUS!!", status);
+	}
 
 	return status;
 }
 
-_IRQL_requires_max_(DISPATCH_LEVEL)
+_Use_decl_annotations_
 NTSTATUS GCN_Controller_Rumble(
-	_In_ PDEVICE_CONTEXT apDeviceContext, _In_ int aIndex, _In_ BOOLEAN aRumble)
+	PDEVICE_CONTEXT apDeviceContext, int aIndex, BOOLEAN aRumble)
 {
 	NTSTATUS status = STATUS_BAD_DATA;
 	if (aIndex < 4)
@@ -220,6 +242,7 @@ NTSTATUS GCN_Controller_Calibrate(
 	return status;
 }
 
+_Kernel_float_used_
 static __inline double dist_2d(double vector1[2], double vector2[2])
 {
 	//sqrt is an intrinsic function of the compiler, how convenient
@@ -228,6 +251,7 @@ static __inline double dist_2d(double vector1[2], double vector2[2])
 			(vector1[1] - vector2[1])*(vector1[1] - vector2[1]));
 }
 
+_Kernel_float_used_
 static __inline double scaled_value(double distance, double sensitivity)
 {
 	return (distance/255. - sensitivity) / (1 - sensitivity);
@@ -276,36 +300,42 @@ static void handle_null_zones(
 	_In_ GCN_Controller_Status *apStatus,
 	_Inout_ GCN_Controller_Input *apOutput)
 {
-	double center[3][2] =
+	KFLOATING_SAVE floatState;
+	NTSTATUS status = KeSaveFloatingPointState(&floatState);
+	if (NT_SUCCESS(status))
 	{
-		{ apCal->axis[0].X, apCal->axis[0].Y },
-		{ apCal->axis[1].X, apCal->axis[1].Y },
-		{ apCal->shoulder[0], apCal->shoulder[1] }
-	};
-	//Handle null zones
-	apStatus->function_axis[0](
-		(BYTE*)&apOutput->axis[0],
-		(BYTE*)&GCN_AdapterControllerZero.input.axis[0],
-		center[0],
-		apStatus->deadzone.axis[0].deadzone / 255.);
+		double center[3][2] =
+		{
+			{ apCal->axis[0].X, apCal->axis[0].Y },
+			{ apCal->axis[1].X, apCal->axis[1].Y },
+			{ apCal->shoulder[0], apCal->shoulder[1] }
+		};
+		//Handle null zones
+		apStatus->function_axis[0](
+			(BYTE*)&apOutput->axis[0],
+			(BYTE*)&GCN_AdapterControllerZero.input.axis[0],
+			center[0],
+			apStatus->deadzone.axis[0].deadzone / 255.);
 
-	apStatus->function_axis[1](
-		(BYTE*)&apOutput->axis[1],
-		(BYTE*)&GCN_AdapterControllerZero.input.axis[1],
-		center[1],
-		apStatus->deadzone.axis[1].deadzone / 255.);
-	
-	apStatus->function_shoulder[0](
-		&apOutput->shoulder[0],
-		GCN_AdapterControllerZero.input.shoulder[0],
-		center[2][0],
-		apStatus->deadzone.shoulder[0].deadzone / 255.);
-	
-	apStatus->function_shoulder[1](
-		&apOutput->shoulder[1],
-		GCN_AdapterControllerZero.input.shoulder[1],
-		center[2][1],
-		apStatus->deadzone.shoulder[1].deadzone / 255.);
+		apStatus->function_axis[1](
+			(BYTE*)&apOutput->axis[1],
+			(BYTE*)&GCN_AdapterControllerZero.input.axis[1],
+			center[1],
+			apStatus->deadzone.axis[1].deadzone / 255.);
+
+		apStatus->function_shoulder[0](
+			&apOutput->shoulder[0],
+			GCN_AdapterControllerZero.input.shoulder[0],
+			center[2][0],
+			apStatus->deadzone.shoulder[0].deadzone / 255.);
+
+		apStatus->function_shoulder[1](
+			&apOutput->shoulder[1],
+			GCN_AdapterControllerZero.input.shoulder[1],
+			center[2][1],
+			apStatus->deadzone.shoulder[1].deadzone / 255.);
+		KeRestoreFloatingPointState(&floatState);
+	}
 }
 
 //This needs to cycle through the 4 controllers
@@ -334,7 +364,7 @@ void prepare_report(
 		}
 	}
 	else
-	{
+	{	
 		data = *apAdapterData;
 		memcpy(
 			&(apControllerReport->input),

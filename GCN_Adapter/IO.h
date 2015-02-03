@@ -24,10 +24,7 @@
  *
  */
 _IRQL_requires_max_(DISPATCH_LEVEL)
-VOID GCN_AdapterEvtIoRead(
-	_In_ WDFQUEUE aQueue,
-	_In_ WDFREQUEST aRequest,
-	_In_ size_t aLength);
+EVT_WDF_IO_QUEUE_IO_READ GCN_AdapterEvtIoRead;
 
 /**	Handles Write requests. Writes data to device (rumble).
  *
@@ -43,10 +40,7 @@ VOID GCN_AdapterEvtIoRead(
  *
  */
 _IRQL_requires_max_(DISPATCH_LEVEL)
-VOID GCN_AdapterEvtIoWrite(
-	_In_ WDFQUEUE aQueue,
-	_In_ WDFREQUEST aRequest,
-	_In_ size_t	aLength);
+EVT_WDF_IO_QUEUE_IO_WRITE GCN_AdapterEvtIoWrite;
 
 /**	Finishes handling Write requests.
  *
@@ -63,10 +57,6 @@ VOID GCN_AdapterEvtIoWrite(
  *
  */
 _IRQL_requires_max_(DISPATCH_LEVEL)
-VOID GCN_AdapterEvtRequestWriteCompletionRoutine(
-	_In_ WDFREQUEST aRequest,
-	_In_ WDFIOTARGET aTarget,
-	_In_ PWDF_REQUEST_COMPLETION_PARAMS aCompletionParams,
-	_In_ WDFCONTEXT aContext);
+EVT_WDF_REQUEST_COMPLETION_ROUTINE GCN_AdapterEvtRequestWriteCompletionRoutine;
 
 #endif//_GCN_ADAPTER_IO_H_

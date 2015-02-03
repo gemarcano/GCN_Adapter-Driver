@@ -73,9 +73,6 @@ NTSTATUS GCN_AdapterCreateDevice(
  *	sending a special init sequence, and prepares the driver to stream data
  *	from the adapter. USB endpoints are also configured.
  *
- *	@remark This function runs at PASSIVE_LEVEL.
- *	@remark This function is paged in page PAGE.
- *
  *	@param [in] aDevice USB Device created by GCN_AdapterCreateDevice.
  *	@param [in] aResourceList Framework handle to a resource-list object that
  *		identifies what raw resources the PnP manager has allocated for the
@@ -84,11 +81,14 @@ NTSTATUS GCN_AdapterCreateDevice(
  *		object that	identifies what translated resources the PnP manager has
  *		allocated for the device.
  *
+ *	@remark This function runs at PASSIVE_LEVEL.
+ *	@remark This function is paged in page PAGE.
+ *
  *	@returns NTSTATUS. @See
  *		http://msdn.microsoft.com/en-us/library/cc704588.aspx for details.
  *
  */
- _IRQL_requires_(PASSIVE_LEVEL)
+_IRQL_requires_(PASSIVE_LEVEL)
 EVT_WDF_DEVICE_PREPARE_HARDWARE GCN_AdapterEvtDevicePrepareHardware;
 
 /** Helper that selects USB interface to use. Used by
@@ -103,7 +103,7 @@ EVT_WDF_DEVICE_PREPARE_HARDWARE GCN_AdapterEvtDevicePrepareHardware;
  *		http://msdn.microsoft.com/en-us/library/cc704588.aspx for details.
  *
  */
- _IRQL_requires_(PASSIVE_LEVEL)
+_IRQL_requires_(PASSIVE_LEVEL)
 NTSTATUS SelectInterfaces(_In_ WDFDEVICE aDevice);
 
 /**	Prepares the USB device with PnP related settings.
@@ -118,7 +118,7 @@ NTSTATUS SelectInterfaces(_In_ WDFDEVICE aDevice);
  *		http://msdn.microsoft.com/en-us/library/cc704588.aspx for details.
  *
  */
- _IRQL_requires_(PASSIVE_LEVEL)
+_IRQL_requires_(PASSIVE_LEVEL)
 NTSTATUS GCN_AdapterPnPInitialize(_In_ PWDFDEVICE_INIT device);
 
 /**	Callback called when the device is removed. Flushes the activity for the
@@ -130,7 +130,7 @@ NTSTATUS GCN_AdapterPnPInitialize(_In_ PWDFDEVICE_INIT device);
  *	@param [in] aDevice USB Device created by GCN_AdapterCreateDevice.
  *
  */
- _IRQL_requires_(PASSIVE_LEVEL)
+_Use_decl_annotations_
 EVT_WDF_DEVICE_SELF_MANAGED_IO_FLUSH GCN_AdapterEvtDeviceSelfManagedIoFlush;
 
 /**	Initializes driver's queues.
@@ -149,7 +149,7 @@ EVT_WDF_DEVICE_SELF_MANAGED_IO_FLUSH GCN_AdapterEvtDeviceSelfManagedIoFlush;
  *	@returns NTSTATUS. @See
  *		http://msdn.microsoft.com/en-us/library/cc704588.aspx for details.
  */
- _IRQL_requires_(PASSIVE_LEVEL)
+_IRQL_requires_(PASSIVE_LEVEL)
 NTSTATUS GCN_AdapterQueueInitialize(_In_ WDFDEVICE aDevice);
 
 #endif//_GCN_ADAPTER_DEVICE_H_

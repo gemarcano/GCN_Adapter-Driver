@@ -6,12 +6,15 @@
 #endif
 
 _IRQL_requires_(PASSIVE_LEVEL)
+EVT_WDF_IO_QUEUE_IO_DEVICE_CONTROL GCN_Adapter_EvtIoDeviceControlForRawPdo;
+
+_Use_decl_annotations_
 VOID GCN_Adapter_EvtIoDeviceControlForRawPdo(
-	_In_ WDFQUEUE      Queue,
-	_In_ WDFREQUEST    Request,
-	_In_ size_t        OutputBufferLength,
-	_In_ size_t        InputBufferLength,
-	_In_ ULONG         IoControlCode)
+	WDFQUEUE      Queue,
+	WDFREQUEST    Request,
+	size_t        OutputBufferLength,
+	size_t        InputBufferLength,
+	ULONG         IoControlCode)
 {
 	NTSTATUS status = STATUS_UNSUCCESSFUL;
 	WDFDEVICE parent = WdfIoQueueGetDevice(Queue);
@@ -73,6 +76,8 @@ NTSTATUS GCN_Adapter_CreateRawPdo(
 	DECLARE_CONST_UNICODE_STRING(hardwareId, GCN_ADAPTER_DEVICE_ID);
 	DECLARE_CONST_UNICODE_STRING(deviceLocation, L"GCN_Adapter\0");
 	DECLARE_UNICODE_STRING_SIZE(buffer, MAX_ID_LEN);
+
+	PAGED_CODE();
 
 	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_GCN_INTERFACE, "%!FUNC! Entry");
 
@@ -195,7 +200,9 @@ NTSTATUS GCN_Adapter_CreateRawPdo(
 	WdfPdoInitAllowForwardingRequestToParent(pDeviceInit);
 
 	status = WdfDeviceCreate(&pDeviceInit, &pdoAttributes, &hChild);
-	if (!NT_SUCCESS(status)) {
+	if (!NT_SUCCESS(status))
+	{
+		hChild = NULL;
 		goto Cleanup;
 	}
 
@@ -307,7 +314,7 @@ Cleanup:
 		WdfDeviceInitFree(pDeviceInit);
 	}
 
-	if (hChild) {
+	if (hChild != NULL) {
 		WdfObjectDelete(hChild);
 	}
 

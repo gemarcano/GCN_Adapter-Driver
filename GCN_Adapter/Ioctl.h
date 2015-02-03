@@ -98,6 +98,24 @@ NTSTATUS GCN_AdapterGetReportDescriptor(
 _IRQL_requires_max_(DISPATCH_LEVEL)
 EVT_WDF_IO_QUEUE_IO_INTERNAL_DEVICE_CONTROL GCN_AdapterEvtInternalDeviceControl;
 
+/**	Handles serving IOCTL requests.
+*
+*	@param [in] aQueue Queue associated with the I/O request.
+*	@param [in] aRequest Request received with IOCTL information.
+*	@param [in] aOutputBufferLength Length of the output buffer, if available.
+*	@param [in] aInputBufferLength Length of the input buffer, if available.
+*	@param [in] aIoControlCode IOCTL code received with request.
+*
+*	@remark This function runs at IRQL <= DISPATCH_LEVEL since it is called by
+*		GCN_AdapterIoctlHIDReadReportHandler.
+* 	@remark This function is not paged.
+*
+*	@post The request is fullfilled one way or another.
+*
+*/
+_IRQL_requires_max_(DISPATCH_LEVEL)
+EVT_WDF_IO_QUEUE_IO_DEVICE_CONTROL GCN_AdapterEvtDeviceControl;
+
 /**	Passes down Idle notification request to the lower driver.
  *
  *	@param [in] aRequest Request received with IOCTL information.

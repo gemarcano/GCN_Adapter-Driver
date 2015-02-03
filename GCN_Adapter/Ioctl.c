@@ -1,13 +1,29 @@
 #include "Include.h"
 #include "ioctl.tmh"
 
-_IRQL_requires_max_(DISPATCH_LEVEL)
+_Use_decl_annotations_
+VOID GCN_AdapterEvtDeviceControl(
+WDFQUEUE aQueue,
+WDFREQUEST aRequest,
+size_t aOutputBufferLength,
+size_t aInputBufferLength,
+ULONG aIoControlCode)
+{
+	GCN_AdapterEvtInternalDeviceControl(
+		aQueue,
+		aRequest,
+		aOutputBufferLength,
+		aInputBufferLength,
+		aIoControlCode);
+}
+
+_Use_decl_annotations_
 VOID GCN_AdapterEvtInternalDeviceControl(
-	_In_ WDFQUEUE aQueue,
-	_In_ WDFREQUEST aRequest,
-	_In_ size_t aOutputBufferLength,
-	_In_ size_t aInputBufferLength,
-	_In_ ULONG aIoControlCode)
+	WDFQUEUE aQueue,
+	WDFREQUEST aRequest,
+	size_t aOutputBufferLength,
+	size_t aInputBufferLength,
+	ULONG aIoControlCode)
 {
 	NTSTATUS status = STATUS_SUCCESS;
 	WDFDEVICE device;
@@ -216,7 +232,7 @@ NTSTATUS GCN_AdapterIoctlHIDReadReportHandler(_In_ WDFDEVICE aDevice)
 	NTSTATUS status;
 	WDFREQUEST request;
 	PDEVICE_CONTEXT pDevContext;
-	size_t bytesToCopy = 0, bytesReturned = 0;
+	size_t bytesToCopy = 0, bytesReturned;
 	GCN_AdapterData	data;
 	GCN_ControllerReport *pReport;
 
@@ -250,11 +266,12 @@ NTSTATUS GCN_AdapterIoctlHIDReadReportHandler(_In_ WDFDEVICE aDevice)
 				TRACE_IOCTL,
 				"WdfRequestRetrieveOutputBuffer failed with status: 0x%x\n",
 				status);
+			bytesReturned = 0;
 		}
 		else
 		{
-				prepare_report(pDevContext, &pDevContext->adapterData, pReport);
-				bytesReturned = bytesToCopy;
+			prepare_report(pDevContext, &pDevContext->adapterData, pReport);
+			bytesReturned = bytesToCopy;
 		}
 
 		WdfRequestCompleteWithInformation(request, status, bytesReturned);
@@ -542,8 +559,6 @@ NTSTATUS GCN_AdapterCalibrate(
 	NTSTATUS status = STATUS_SUCCESS;
 	UCHAR i;
 
-	PAGED_CODE();
-
 	TraceEvents(TRACE_LEVEL_VERBOSE, TRACE_IOCTL, "!FUNC! Enter\n");
 
 	WDF_REQUEST_PARAMETERS_INIT(&params);
@@ -610,8 +625,6 @@ NTSTATUS GCN_AdapterSetDeadzone(
 	NTSTATUS status = STATUS_SUCCESS;
 	UCHAR i;
 
-	PAGED_CODE();
-
 	TraceEvents(TRACE_LEVEL_VERBOSE, TRACE_IOCTL, "!FUNC! Enter\n");
 
 	WDF_REQUEST_PARAMETERS_INIT(&params);
@@ -659,8 +672,6 @@ NTSTATUS GCN_AdapterSetRumble(
 	GCN_AdapterData adapterData;
 	NTSTATUS status;
 
-	PAGED_CODE();
-
 	TraceEvents(TRACE_LEVEL_VERBOSE, TRACE_IOCTL, "!FUNC! Enter\n");
 
 	WDF_REQUEST_PARAMETERS_INIT(&params);
@@ -703,8 +714,6 @@ NTSTATUS GCN_AdapterGetSensitivity(
 	PDEVICE_CONTEXT pDeviceContext = DeviceGetContext(aDevice);
 	NTSTATUS status = STATUS_SUCCESS;
 	UCHAR i;
-
-	PAGED_CODE();
 
 	TraceEvents(TRACE_LEVEL_VERBOSE, TRACE_IOCTL, "!FUNC! Enter\n");
 

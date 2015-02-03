@@ -47,12 +47,12 @@ NTSTATUS GCN_AdapterConfigContReaderForInterruptEndPoint(
 	return status;
 }
 
-_IRQL_requires_max_(DISPATCH_LEVEL)
+_Use_decl_annotations_
 VOID GCN_AdapterEvtUsbInterruptPipeReadComplete(
-	_In_ WDFUSBPIPE aPipe,
-	_In_ WDFMEMORY aBuffer,
-	_In_ size_t aNumBytesTransferred,
-	_In_ WDFCONTEXT aContext)
+	WDFUSBPIPE aPipe,
+	WDFMEMORY aBuffer,
+	size_t aNumBytesTransferred,
+	WDFCONTEXT aContext)
 {
 	WDFDEVICE device;
 	PDEVICE_CONTEXT pDeviceContext = aContext;
@@ -98,11 +98,11 @@ VOID GCN_AdapterEvtUsbInterruptPipeReadComplete(
 	GCN_AdapterIoctlHIDReadReportHandler(device);
 }
 
-_IRQL_requires_(PASSIVE_LEVEL)
+_Use_decl_annotations_
 BOOLEAN GCN_AdapterEvtUsbInterruptReadersFailed(
-	_In_ WDFUSBPIPE aPipe,
-	_In_ NTSTATUS aStatus,
-	_In_ USBD_STATUS aUsbdStatus)
+	WDFUSBPIPE aPipe,
+	NTSTATUS aStatus,
+	USBD_STATUS aUsbdStatus)
 {
 	PAGED_CODE();
 	WDFDEVICE device = WdfIoTargetGetDevice(WdfUsbTargetPipeGetIoTarget(aPipe));

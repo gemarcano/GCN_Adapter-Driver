@@ -74,14 +74,26 @@ NTSTATUS GCN_AdapterCreateDevice(
 	GCN_Controller_Status_Init(&deviceContext->controllerStatus[3]);
 
 	//Initialize rumble support data
-	WdfRequestCreate(&deviceAttributes, NULL, &deviceContext->rumbleRequest);
-	WdfMemoryCreate(
+	status = WdfRequestCreate(
+		&deviceAttributes, NULL, &deviceContext->rumbleRequest);
+
+	if (!NT_SUCCESS(status))
+	{
+		goto Error;
+	}
+
+	status = WdfMemoryCreate(
 		&deviceAttributes,
 		NonPagedPool,
 		0,
 		5,
 		&deviceContext->rumbleMemory,
 		NULL);
+	
+	if (!NT_SUCCESS(status))
+	{
+		goto Error;
+	}
 
 	((BYTE*)(WdfMemoryGetBuffer(deviceContext->rumbleMemory, NULL)))[0] = 0x11;
 	deviceContext->rumbleStatus = 0;
@@ -93,11 +105,11 @@ Error:
 	return status;
 }
 
- _IRQL_requires_(PASSIVE_LEVEL)
+ _Use_decl_annotations_
 NTSTATUS GCN_AdapterEvtDevicePrepareHardware(
-	_In_ WDFDEVICE aDevice,
-	_In_ WDFCMRESLIST aResourceList,
-	_In_ WDFCMRESLIST aResourceListTranslated)
+	WDFDEVICE aDevice,
+	WDFCMRESLIST aResourceList,
+	WDFCMRESLIST aResourceListTranslated)
 {
 	NTSTATUS status;
 	PDEVICE_CONTEXT pDeviceContext;
@@ -231,7 +243,15 @@ NTSTATUS GCN_AdapterEvtDevicePrepareHardware(
 		don't want to deal with it. Using a non-paged pool memory object works
 		without problems.
 	 */
-	WdfMemoryCopyFromBuffer(memory, 0, &"\x13", 1);
+	status = WdfMemoryCopyFromBuffer(memory, 0, &"\x13", 1);
+
+	if (!NT_SUCCESS(status))
+	{
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE,
+			"WdfMemoryCopyFromBuffer failed %!STATUS!\n", status);
+		return status;
+	}
+
 	WDF_MEMORY_DESCRIPTOR_INIT_HANDLE(&memoryDescriptor,
 		memory,
 		NULL);
@@ -348,6 +368,7 @@ NTSTATUS GCN_AdapterPnPInitialize(
 {
 	NTSTATUS status = STATUS_SUCCESS;
 	WDF_PNPPOWER_EVENT_CALLBACKS pnpPowerCallbacks;
+	PAGED_CODE();
 
 	WDF_PNPPOWER_EVENT_CALLBACKS_INIT(&pnpPowerCallbacks);
 	pnpPowerCallbacks.EvtDevicePrepareHardware =
@@ -363,13 +384,14 @@ NTSTATUS GCN_AdapterPnPInitialize(
 	return status;
 }
 
-_IRQL_requires_(PASSIVE_LEVEL)
+_Use_decl_annotations_
 VOID GCN_AdapterEvtDeviceSelfManagedIoFlush(
-	_In_ WDFDEVICE aDevice)
+	WDFDEVICE aDevice)
 {
 	//There is one queue that is self managed that needs to be flushed
 	//flush the queue by responding to each currently queued message.
 	NTSTATUS status;
+	PAGED_CODE();
 	do
 	{
 		status = GCN_AdapterIoctlHIDReadReportHandler(aDevice);
@@ -403,7 +425,7 @@ NTSTATUS GCN_AdapterQueueInitialize(_In_ WDFDEVICE aDevice)
 
 	queueConfig.EvtIoInternalDeviceControl =
 		GCN_AdapterEvtInternalDeviceControl;
-	queueConfig.EvtIoDeviceControl = GCN_AdapterEvtInternalDeviceControl;
+	queueConfig.EvtIoDeviceControl = GCN_AdapterEvtDeviceControl;
 
 	status = WdfIoQueueCreate(
 		aDevice,
