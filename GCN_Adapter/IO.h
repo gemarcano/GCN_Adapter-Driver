@@ -23,6 +23,7 @@
  *	@post Request is handled asynchronously.
  *
  */
+_IRQL_requires_max_(DISPATCH_LEVEL)
 VOID GCN_AdapterEvtIoRead(
 	_In_ WDFQUEUE aQueue,
 	_In_ WDFREQUEST aRequest,
@@ -41,6 +42,7 @@ VOID GCN_AdapterEvtIoRead(
  *	@post Request is handled asynchronously.
  *
  */
+_IRQL_requires_max_(DISPATCH_LEVEL)
 VOID GCN_AdapterEvtIoWrite(
 	_In_ WDFQUEUE aQueue,
 	_In_ WDFREQUEST aRequest,
@@ -60,6 +62,7 @@ VOID GCN_AdapterEvtIoWrite(
  *	@post Request is handled.
  *
  */
+_IRQL_requires_max_(DISPATCH_LEVEL)
 VOID GCN_AdapterEvtRequestWriteCompletionRoutine(
 	_In_ WDFREQUEST aRequest,
 	_In_ WDFIOTARGET aTarget,

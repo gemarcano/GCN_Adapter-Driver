@@ -47,11 +47,12 @@ NTSTATUS GCN_AdapterConfigContReaderForInterruptEndPoint(
 	return status;
 }
 
+_IRQL_requires_max_(DISPATCH_LEVEL)
 VOID GCN_AdapterEvtUsbInterruptPipeReadComplete(
-	WDFUSBPIPE aPipe,
-	WDFMEMORY aBuffer,
-	size_t aNumBytesTransferred,
-	WDFCONTEXT aContext)
+	_In_ WDFUSBPIPE aPipe,
+	_In_ WDFMEMORY aBuffer,
+	_In_ size_t aNumBytesTransferred,
+	_In_ WDFCONTEXT aContext)
 {
 	WDFDEVICE device;
 	PDEVICE_CONTEXT pDeviceContext = aContext;
@@ -97,6 +98,7 @@ VOID GCN_AdapterEvtUsbInterruptPipeReadComplete(
 	GCN_AdapterIoctlHIDReadReportHandler(device);
 }
 
+_IRQL_requires_(PASSIVE_LEVEL)
 BOOLEAN GCN_AdapterEvtUsbInterruptReadersFailed(
 	_In_ WDFUSBPIPE aPipe,
 	_In_ NTSTATUS aStatus,

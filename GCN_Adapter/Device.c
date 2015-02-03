@@ -10,6 +10,7 @@
 #pragma alloc_text (PAGE, GCN_AdapterEvtDeviceSelfManagedIoFlush)
 #endif
 
+ _IRQL_requires_(PASSIVE_LEVEL)
 NTSTATUS GCN_AdapterCreateDevice(
 	_Inout_ PWDFDEVICE_INIT aDeviceInit)
 {
@@ -92,6 +93,7 @@ Error:
 	return status;
 }
 
+ _IRQL_requires_(PASSIVE_LEVEL)
 NTSTATUS GCN_AdapterEvtDevicePrepareHardware(
 	_In_ WDFDEVICE aDevice,
 	_In_ WDFCMRESLIST aResourceList,
@@ -340,6 +342,7 @@ NTSTATUS SelectInterfaces(
 	return status;
 }
 
+_IRQL_requires_(PASSIVE_LEVEL)
 NTSTATUS GCN_AdapterPnPInitialize(
 	_In_ PWDFDEVICE_INIT aDeviceInit)
 {
@@ -360,6 +363,7 @@ NTSTATUS GCN_AdapterPnPInitialize(
 	return status;
 }
 
+_IRQL_requires_(PASSIVE_LEVEL)
 VOID GCN_AdapterEvtDeviceSelfManagedIoFlush(
 	_In_ WDFDEVICE aDevice)
 {
@@ -379,6 +383,7 @@ VOID GCN_AdapterEvtDeviceSelfManagedIoFlush(
 	}
 }
 
+_IRQL_requires_(PASSIVE_LEVEL)
 NTSTATUS GCN_AdapterQueueInitialize(_In_ WDFDEVICE aDevice)
 {
 	WDFQUEUE queue;

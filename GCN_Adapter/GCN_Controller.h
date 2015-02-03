@@ -133,7 +133,9 @@ typedef struct _GCN_Controller_Status
  *	@post The data structure passed in is initialized to default values.
  *
  */
-void GCN_Controller_Status_Init(GCN_Controller_Status *aControllerStatus);
+_IRQL_requires_min_(PASSIVE_LEVEL)
+void GCN_Controller_Status_Init(
+	_Inout_ GCN_Controller_Status *aControllerStatus);
 
 /**	@brief Updates the deadzone parameters (deadzone sensitivity and operating
  *		mode).
@@ -149,9 +151,10 @@ void GCN_Controller_Status_Init(GCN_Controller_Status *aControllerStatus);
  *	@remark This function is not paged.
  *
  */
+_IRQL_requires_min_(PASSIVE_LEVEL)
 void GCN_Controller_Status_Update_Deadzone(
-	GCN_Controller_Status *aControllerStatus,
-	GCN_Controller_Deadzone_Status *aNewStatus);
+	_Inout_ GCN_Controller_Status *aControllerStatus,
+	_In_ GCN_Controller_Deadzone_Status *aNewStatus);
 
 /**	@brief Uses the lower four bytes of aRumble to determine the current status
  *		of each of the controllers' rumble and updates them accordingly.
@@ -167,7 +170,9 @@ void GCN_Controller_Status_Update_Deadzone(
  *		http://msdn.microsoft.com/en-us/library/cc704588.aspx for details.
  *
  */
-NTSTATUS GCN_Adapter_Rumble(DEVICE_CONTEXT *apDeviceContext, BYTE aRumble);
+_IRQL_requires_max_(DISPATCH_LEVEL)
+NTSTATUS GCN_Adapter_Rumble(
+	_Inout_ DEVICE_CONTEXT *apDeviceContext, _In_ BYTE aRumble);
 
 /**	@brief Triggers rumble for the specified controller at index [0, 3].
  *
@@ -186,8 +191,11 @@ NTSTATUS GCN_Adapter_Rumble(DEVICE_CONTEXT *apDeviceContext, BYTE aRumble);
  *		updated as specified in the aRumble variable.
  *
  */
+_IRQL_requires_max_(DISPATCH_LEVEL)
 NTSTATUS GCN_Controller_Rumble(
-	DEVICE_CONTEXT *apDeviceContext, int aIndex, BOOLEAN aRumble);
+	_Inout_ DEVICE_CONTEXT *apDeviceContext,
+	_In_ int aIndex,
+	_In_ BOOLEAN aRumble);
 
 /**	Helper that sets the USB device's calibration values from current values.
  *
@@ -204,8 +212,9 @@ NTSTATUS GCN_Controller_Rumble(
  *		updated as specified by the aRumble variable.
  *
  */
+_IRQL_requires_max_(DISPATCH_LEVEL)
 NTSTATUS GCN_Controller_Calibrate(
-	DEVICE_CONTEXT _In_ *pDeviceContext, int _In_ aIndex);
+	_In_ DEVICE_CONTEXT *pDeviceContext, _In_ int aIndex);
 
 /**	@brief Prepares a controller report to return to the upper HID minidriver.
  *
@@ -221,9 +230,10 @@ NTSTATUS GCN_Controller_Calibrate(
  *	@remark This function is not paged.
  *
  */
+_IRQL_requires_max_(DISPATCH_LEVEL)
 void prepare_report(
-	DEVICE_CONTEXT *apDeviceContext,
-	GCN_AdapterData *apAdapterData,
-	GCN_ControllerReport *apControllerReport);
+	_In_ DEVICE_CONTEXT *apDeviceContext,
+	_In_ GCN_AdapterData *apAdapterData,
+	_Out_ GCN_ControllerReport *apControllerReport);
 
 #endif//_GCN_ADAPTOR_GCN_CONTROLLER_H_

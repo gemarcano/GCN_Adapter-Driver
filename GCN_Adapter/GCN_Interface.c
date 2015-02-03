@@ -1,12 +1,17 @@
 #include "Include.h"
 #include "gcn_interface.tmh"
 
+#ifdef ALLOC_PRAGMA
+#pragma alloc_text(PAGE, GCN_Adapter_CreateRawPdo)
+#endif
+
+_IRQL_requires_(PASSIVE_LEVEL)
 VOID GCN_Adapter_EvtIoDeviceControlForRawPdo(
-IN WDFQUEUE      Queue,
-IN WDFREQUEST    Request,
-IN size_t        OutputBufferLength,
-IN size_t        InputBufferLength,
-IN ULONG         IoControlCode)
+	_In_ WDFQUEUE      Queue,
+	_In_ WDFREQUEST    Request,
+	_In_ size_t        OutputBufferLength,
+	_In_ size_t        InputBufferLength,
+	_In_ ULONG         IoControlCode)
 {
 	NTSTATUS status = STATUS_UNSUCCESSFUL;
 	WDFDEVICE parent = WdfIoQueueGetDevice(Queue);
@@ -49,10 +54,10 @@ IN ULONG         IoControlCode)
 
 #define MAX_ID_LEN 128
 
-NTSTATUS
-GCN_Adapter_CreateRawPdo(
-WDFDEVICE       Device,
-ULONG           InstanceNo)
+_IRQL_requires_(PASSIVE_LEVEL)
+NTSTATUS GCN_Adapter_CreateRawPdo(
+	_In_ WDFDEVICE aDevice,
+	_In_ ULONG aInstanceNo)
 {
 	NTSTATUS status;
 	PWDFDEVICE_INIT pDeviceInit = NULL;
@@ -75,7 +80,7 @@ ULONG           InstanceNo)
 	// Allocate a WDFDEVICE_INIT structure and set the properties
 	// so that we can create a device object for the child.
 	//
-	pDeviceInit = WdfPdoInitAllocate(Device);
+	pDeviceInit = WdfPdoInitAllocate(aDevice);
 
 	if (pDeviceInit == NULL) {
 		status = STATUS_INSUFFICIENT_RESOURCES;
@@ -134,7 +139,7 @@ ULONG           InstanceNo)
 	// to multiple instances of keyboard, so we must provide a
 	// BusQueryInstanceID. If we don't, system will throw CA bugcheck.
 	//
-	status = RtlUnicodeStringPrintf(&buffer, L"%02d", InstanceNo);
+	status = RtlUnicodeStringPrintf(&buffer, L"%02d", aInstanceNo);
 	if (!NT_SUCCESS(status)) {
 		goto Cleanup;
 	}
@@ -153,7 +158,7 @@ ULONG           InstanceNo)
 	// Since our device is raw device and we don't provide any hardware ID
 	// to match with an INF, this text will be displayed in the device manager.
 	//
-	status = RtlUnicodeStringPrintf(&buffer, L"GCN_Adapter_%02d", InstanceNo);
+	status = RtlUnicodeStringPrintf(&buffer, L"GCN_Adapter_%02d", aInstanceNo);
 	if (!NT_SUCCESS(status)) {
 		goto Cleanup;
 	}
@@ -199,12 +204,12 @@ ULONG           InstanceNo)
 	//
 	pdoData = IntDeviceGetContext(hChild);
 
-	pdoData->id = InstanceNo;
+	pdoData->id = aInstanceNo;
 
 	//
 	// Get the parent queue we will be forwarding to
 	//
-	devExt = DeviceGetContext(Device);
+	devExt = DeviceGetContext(aDevice);
 	pdoData->ioctlQueue = devExt->otherQueue;
 
 	//
@@ -239,8 +244,8 @@ ULONG           InstanceNo)
 	pnpCaps.SurpriseRemovalOK = WdfTrue;
 	pnpCaps.NoDisplayInUI = WdfTrue;
 
-	pnpCaps.Address = InstanceNo;
-	pnpCaps.UINumber = InstanceNo;
+	pnpCaps.Address = aInstanceNo;
+	pnpCaps.UINumber = aInstanceNo;
 
 	WdfDeviceSetPnpCapabilities(hChild, &pnpCaps);
 
@@ -278,7 +283,7 @@ ULONG           InstanceNo)
 	// driver must call WdfPdoMarkMissing to get the device deleted. It
 	// shouldn't delete the child device directly by calling WdfObjectDelete.
 	//
-	status = WdfFdoAddStaticChild(Device, hChild);
+	status = WdfFdoAddStaticChild(aDevice, hChild);
 	if (!NT_SUCCESS(status)) {
 		goto Cleanup;
 	}

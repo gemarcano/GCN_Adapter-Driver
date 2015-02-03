@@ -31,6 +31,7 @@ PCHAR DbgDevicePowerString(_In_ WDF_POWER_DEVICE_STATE Type)
 	}
 }
 
+_IRQL_requires_(PASSIVE_LEVEL)
 NTSTATUS GCN_AdapterEvtDeviceD0Entry(
 	WDFDEVICE aDevice, WDF_POWER_DEVICE_STATE aPreviousState)
 {
@@ -62,7 +63,8 @@ End:
 
 	if (!NT_SUCCESS(status))
 	{
-		// Kill the continuous reader since if this operation failed, the driver is being unloaded...
+		// Kill the continuous reader since if this operation failed, the driver
+		//is being unloaded...
 		if (isTargetStarted)
 		{
 			WdfIoTargetStop(WdfUsbTargetPipeGetIoTarget(
@@ -76,7 +78,10 @@ End:
 	return status;
 }
 
-NTSTATUS GCN_AdapterEvtDeviceD0Exit(WDFDEVICE aDevice, WDF_POWER_DEVICE_STATE aTargetState)
+_IRQL_requires_(PASSIVE_LEVEL)
+NTSTATUS GCN_AdapterEvtDeviceD0Exit(
+	_In_ WDFDEVICE aDevice,
+	_In_ WDF_POWER_DEVICE_STATE aTargetState)
 {
 	PDEVICE_CONTEXT pDeviceContext;
 

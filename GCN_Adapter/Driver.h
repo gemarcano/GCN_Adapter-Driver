@@ -29,6 +29,7 @@ static unsigned int GCN_Adapter_deviceCount = 0;
  *	@returns STATUS_SUCCESS if successful, STATUS_UNSUCCESSFUL on any failure.
  *
  */
+ _IRQL_requires_(PASSIVE_LEVEL)
 DRIVER_INITIALIZE DriverEntry;
 
 /**	Creates and initializes a Device object. Called when PnP manager requests to
@@ -49,6 +50,7 @@ DRIVER_INITIALIZE DriverEntry;
  *		http://msdn.microsoft.com/en-us/library/cc704588.aspx for details.
  *
  */
+ _IRQL_requires_(PASSIVE_LEVEL)
 EVT_WDF_DRIVER_DEVICE_ADD GCN_AdapterEvtDriverDeviceAdd;
 
 /**	Frees all the resources allocated in DriverEntry. Called when driver is
@@ -67,6 +69,7 @@ EVT_WDF_DRIVER_DEVICE_ADD GCN_AdapterEvtDriverDeviceAdd;
  *		provided by the framework.
  *
  */
+ _IRQL_requires_(PASSIVE_LEVEL)
 EVT_WDF_OBJECT_CONTEXT_CLEANUP GCN_AdapterEvtDriverContextCleanup;
 
 #endif//_GCN_ADAPTER_DRIVER_H_

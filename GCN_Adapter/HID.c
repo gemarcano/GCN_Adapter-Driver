@@ -141,6 +141,7 @@ CONST HID_DESCRIPTOR HIDDescriptor = {
 	sizeof(ReportDescriptor) }  // total length of custom report descriptor
 };
 
+_IRQL_requires_min_(PASSIVE_LEVEL)
 PCHAR DbgHidInternalIoctlString(
 	_In_ ULONG aIoControlCode)
 {

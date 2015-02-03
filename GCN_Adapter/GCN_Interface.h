@@ -31,11 +31,15 @@ WDF_DECLARE_CONTEXT_TYPE_WITH_NAME(INT_DEVICE_CONTEXT, IntDeviceGetContext)
  *	@param [in] aDevice USB Device created by GCN_AdapterCreateDevice.
  *	@param [in] aInstanceNo Number of the new device instance.
  *	
+ *	@remark This function runs at PASSIVE_LEVEL.
+ *	@remark This function is paged in page PAGE.
+ *
  *	@returns NTSTATUS. @See
  *		http://msdn.microsoft.com/en-us/library/cc704588.aspx for details.
  */
+_IRQL_requires_(PASSIVE_LEVEL)
 NTSTATUS GCN_Adapter_CreateRawPdo(
-	WDFDEVICE       aDevice,
-	ULONG           aInstanceNo);
+	_In_ WDFDEVICE aDevice,
+	_In_ ULONG aInstanceNo);
 
 #endif//_GCN_INTERFACE_H_

@@ -22,6 +22,7 @@
  *		error. @See http://msdn.microsoft.com/en-us/library/cc704588.aspx for
  *		details.
  */
+_IRQL_requires_max_(DISPATCH_LEVEL)
 NTSTATUS GCN_AdapterIoctlHIDReadReportHandler(_In_ WDFDEVICE aDevice);
 
 /**	Handles returning the HID Descriptor to the given request.
@@ -38,6 +39,7 @@ NTSTATUS GCN_AdapterIoctlHIDReadReportHandler(_In_ WDFDEVICE aDevice);
  *	@returns NTSTATUS. @See
  *		http://msdn.microsoft.com/en-us/library/cc704588.aspx for details.
  */
+_IRQL_requires_max_(DISPATCH_LEVEL)
 NTSTATUS GCN_AdapterGetHidDescriptor(
 	_In_ WDFDEVICE aDevice,
 	_In_ WDFREQUEST aRequest);
@@ -55,6 +57,7 @@ NTSTATUS GCN_AdapterGetHidDescriptor(
  *	@returns NTSTATUS. @See
  *		http://msdn.microsoft.com/en-us/library/cc704588.aspx for details.
  */
+_IRQL_requires_max_(DISPATCH_LEVEL)
 NTSTATUS GCN_AdapterGetDeviceAttributes(
 	_In_ WDFREQUEST aRequest);
 
@@ -72,6 +75,7 @@ NTSTATUS GCN_AdapterGetDeviceAttributes(
  *	@returns NTSTATUS. @See
  *		http://msdn.microsoft.com/en-us/library/cc704588.aspx for details.
  */
+_IRQL_requires_max_(DISPATCH_LEVEL)
 NTSTATUS GCN_AdapterGetReportDescriptor(
 	_In_ WDFDEVICE aDevice,
 	_In_ WDFREQUEST aRequest);
@@ -91,6 +95,7 @@ NTSTATUS GCN_AdapterGetReportDescriptor(
  *	@post The request is fullfilled one way or another.
  *
  */
+_IRQL_requires_max_(DISPATCH_LEVEL)
 EVT_WDF_IO_QUEUE_IO_INTERNAL_DEVICE_CONTROL GCN_AdapterEvtInternalDeviceControl;
 
 /**	Passes down Idle notification request to the lower driver.
@@ -105,6 +110,7 @@ EVT_WDF_IO_QUEUE_IO_INTERNAL_DEVICE_CONTROL GCN_AdapterEvtInternalDeviceControl;
  *		http://msdn.microsoft.com/en-us/library/cc704588.aspx for details.
  *
  */
+_IRQL_requires_max_(DISPATCH_LEVEL)
 NTSTATUS GCN_AdapterSendIdleNotification(_In_ WDFREQUEST aRequest);
 
 
@@ -121,6 +127,7 @@ NTSTATUS GCN_AdapterSendIdleNotification(_In_ WDFREQUEST aRequest);
  *		http://msdn.microsoft.com/en-us/library/cc704588.aspx for details.
  *
  */
+_IRQL_requires_max_(DISPATCH_LEVEL)
 NTSTATUS GCN_AdapterCalibrate(
 	_In_ WDFDEVICE aDevice,
 	_In_ WDFREQUEST aRequest);
@@ -138,6 +145,7 @@ NTSTATUS GCN_AdapterCalibrate(
  *		http://msdn.microsoft.com/en-us/library/cc704588.aspx for details.
  *
  */
+_IRQL_requires_max_(DISPATCH_LEVEL)
 NTSTATUS GCN_AdapterSetDeadzone(
 	_In_ WDFDEVICE aDevice,
 	_In_ WDFREQUEST aRequest);
@@ -155,6 +163,7 @@ NTSTATUS GCN_AdapterSetDeadzone(
  *		http://msdn.microsoft.com/en-us/library/cc704588.aspx for details.
  *
  */
+_IRQL_requires_max_(DISPATCH_LEVEL)
 NTSTATUS GCN_AdapterGetSensitivity(
 	_In_ WDFDEVICE aDevice,
 	_In_ WDFREQUEST aRequest);
@@ -172,6 +181,7 @@ NTSTATUS GCN_AdapterGetSensitivity(
  *		http://msdn.microsoft.com/en-us/library/cc704588.aspx for details.
  *
  */
+_IRQL_requires_max_(DISPATCH_LEVEL)
 NTSTATUS GCN_AdapterSetRumble(
 	_In_ WDFDEVICE aDevice,
 	_In_ WDFREQUEST aRequest);

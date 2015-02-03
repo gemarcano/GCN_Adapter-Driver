@@ -1,6 +1,7 @@
 #include "Include.h"
 #include "ioctl.tmh"
 
+_IRQL_requires_max_(DISPATCH_LEVEL)
 VOID GCN_AdapterEvtInternalDeviceControl(
 	_In_ WDFQUEUE aQueue,
 	_In_ WDFREQUEST aRequest,
@@ -209,6 +210,7 @@ VOID GCN_AdapterEvtInternalDeviceControl(
 
 //Helper IOCTL functions follow below:
 
+_IRQL_requires_max_(DISPATCH_LEVEL)
 NTSTATUS GCN_AdapterIoctlHIDReadReportHandler(_In_ WDFDEVICE aDevice)
 {
 	NTSTATUS status;
@@ -268,6 +270,7 @@ NTSTATUS GCN_AdapterIoctlHIDReadReportHandler(_In_ WDFDEVICE aDevice)
 	return status;
 }
 
+_IRQL_requires_max_(DISPATCH_LEVEL)
 NTSTATUS GCN_AdapterGetHidDescriptor(
 	_In_ WDFDEVICE aDevice,
 	_In_ WDFREQUEST aRequest)
@@ -329,6 +332,7 @@ NTSTATUS GCN_AdapterGetHidDescriptor(
 	return status;
 }
 
+_IRQL_requires_max_(DISPATCH_LEVEL)
 NTSTATUS GCN_AdapterGetDeviceAttributes(
 	_In_ WDFREQUEST aRequest)
 {
@@ -381,6 +385,7 @@ NTSTATUS GCN_AdapterGetDeviceAttributes(
 	return status;
 }
 
+_IRQL_requires_max_(DISPATCH_LEVEL)
 NTSTATUS GCN_AdapterGetReportDescriptor(
 	_In_ WDFDEVICE aDevice,
 	_In_ WDFREQUEST aRequest)
@@ -445,6 +450,7 @@ NTSTATUS GCN_AdapterGetReportDescriptor(
 	return status;
 }
 
+_IRQL_requires_max_(DISPATCH_LEVEL)
 NTSTATUS GCN_AdapterSendIdleNotification(_In_ WDFREQUEST Request)
 {
 	NTSTATUS                   status = STATUS_SUCCESS;
@@ -525,6 +531,7 @@ NTSTATUS GCN_AdapterSendIdleNotification(_In_ WDFREQUEST Request)
 	return status;
 }
 
+_IRQL_requires_max_(DISPATCH_LEVEL)
 NTSTATUS GCN_AdapterCalibrate(
 	_In_ WDFDEVICE aDevice,
 	_In_ WDFREQUEST aRequest)
@@ -592,6 +599,7 @@ NTSTATUS GCN_AdapterCalibrate(
 	return status;
 }
 
+_IRQL_requires_max_(DISPATCH_LEVEL)
 NTSTATUS GCN_AdapterSetDeadzone(
 	_In_ WDFDEVICE aDevice,
 	_In_ WDFREQUEST aRequest)
@@ -640,6 +648,7 @@ NTSTATUS GCN_AdapterSetDeadzone(
 	return status;
 }
 
+_IRQL_requires_max_(DISPATCH_LEVEL)
 NTSTATUS GCN_AdapterSetRumble(
 	_In_ WDFDEVICE aDevice,
 	_In_ WDFREQUEST aRequest)
@@ -684,6 +693,7 @@ NTSTATUS GCN_AdapterSetRumble(
 	return status;
 }
 
+_IRQL_requires_max_(DISPATCH_LEVEL)
 NTSTATUS GCN_AdapterGetSensitivity(
 	_In_ WDFDEVICE aDevice,
 	_In_ WDFREQUEST aRequest)

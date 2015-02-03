@@ -23,6 +23,7 @@
  *		http://msdn.microsoft.com/en-us/library/cc704588.aspx for details.
  *
  */
+_IRQL_requires_(PASSIVE_LEVEL)
 EVT_WDF_DEVICE_D0_ENTRY GCN_AdapterEvtDeviceD0Entry;
 
 /**	Handles leaving the powered up mode of operation.
@@ -39,6 +40,7 @@ EVT_WDF_DEVICE_D0_ENTRY GCN_AdapterEvtDeviceD0Entry;
  *		the device to be torn down.
  *
  */
+_IRQL_requires_(PASSIVE_LEVEL)
 EVT_WDF_DEVICE_D0_EXIT GCN_AdapterEvtDeviceD0Exit;
 
 #endif//_GCN_ADAPTER_POWER_H_

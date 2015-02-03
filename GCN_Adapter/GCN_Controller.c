@@ -30,14 +30,16 @@ GCN_Controller_Status GCN_Controller_Status_Zero =
 	.function_shoulder = { linear_handle_shoulder, linear_handle_shoulder}
 };
 
-void GCN_Controller_Status_Init(GCN_Controller_Status *aControllerStatus)
+_IRQL_requires_min_(PASSIVE_LEVEL)
+void GCN_Controller_Status_Init(_Out_ GCN_Controller_Status *aControllerStatus)
 {
 	*aControllerStatus = GCN_Controller_Status_Zero;
 }
 
+_IRQL_requires_min_(PASSIVE_LEVEL)
 void GCN_Controller_Status_Update_Deadzone(
-	GCN_Controller_Status *apControllerStatus,
-	GCN_Controller_Deadzone_Status *apNewStatus)
+	_Out_ GCN_Controller_Status *apControllerStatus,
+	_In_ GCN_Controller_Deadzone_Status *apNewStatus)
 {
 	int i = 0;
 	apControllerStatus->deadzone = *apNewStatus;
@@ -90,8 +92,9 @@ void GCN_Adapter_Rumble_Completion(
 	//How about updating rumble status?
 }
 
+_IRQL_requires_max_(DISPATCH_LEVEL)
 NTSTATUS GCN_Adapter_Rumble(
-	PDEVICE_CONTEXT _In_ apDeviceContext, BYTE _In_ aRumble)
+	_In_ PDEVICE_CONTEXT apDeviceContext, _In_ BYTE aRumble)
 {
 	NTSTATUS status;
 	GCN_AdapterData adapterData;
@@ -160,8 +163,9 @@ Exit:
 	return status;
 }
 
+_IRQL_requires_max_(DISPATCH_LEVEL)
 NTSTATUS GCN_Controller_Rumble(
-	PDEVICE_CONTEXT _In_ apDeviceContext, int _In_ aIndex, BOOLEAN _In_ aRumble)
+	_In_ PDEVICE_CONTEXT apDeviceContext, _In_ int aIndex, _In_ BOOLEAN aRumble)
 {
 	NTSTATUS status = STATUS_BAD_DATA;
 	if (aIndex < 4)
@@ -186,8 +190,9 @@ NTSTATUS GCN_Controller_Rumble(
 	return status;
 }
 
+_IRQL_requires_max_(DISPATCH_LEVEL)
 NTSTATUS GCN_Controller_Calibrate(
-	PDEVICE_CONTEXT _In_ apDeviceContext, int _In_ aIndex)
+	_In_ PDEVICE_CONTEXT apDeviceContext, _In_ int aIndex)
 {
 	NTSTATUS status = STATUS_SUCCESS;
 	GCN_AdapterData calibrationData;
@@ -267,9 +272,9 @@ static void linear_handle_shoulder(
 }
 
 static void handle_null_zones(
-	GCN_Controller_Input _In_ *apCal,
-	GCN_Controller_Status _In_ *apStatus,
-	GCN_Controller_Input _Inout_ *apOutput)
+	_In_ GCN_Controller_Input *apCal,
+	_In_ GCN_Controller_Status *apStatus,
+	_Inout_ GCN_Controller_Input *apOutput)
 {
 	double center[3][2] =
 	{
@@ -304,10 +309,11 @@ static void handle_null_zones(
 }
 
 //This needs to cycle through the 4 controllers
+_IRQL_requires_max_(DISPATCH_LEVEL)
 void prepare_report(
-	PDEVICE_CONTEXT apDeviceContext,
-	GCN_AdapterData *apAdapterData,
-	GCN_ControllerReport *apControllerReport)
+	_In_ DEVICE_CONTEXT *apDeviceContext,
+	_In_ GCN_AdapterData *apAdapterData,
+	_Out_ GCN_ControllerReport *apControllerReport)
 {
 	//ID should loop from 1 to 4, inclusive ( [1, 4] )
 	static BYTE id = 1;

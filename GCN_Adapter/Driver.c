@@ -7,6 +7,7 @@
 #pragma alloc_text (PAGE, GCN_AdapterEvtDriverContextCleanup)
 #endif
 
+_IRQL_requires_(PASSIVE_LEVEL)
 NTSTATUS DriverEntry(
 	_In_ PDRIVER_OBJECT  aDriverObject,
 	_In_ PUNICODE_STRING aRegistryPath)
@@ -48,6 +49,7 @@ NTSTATUS DriverEntry(
 	return status;
 }
 
+_IRQL_requires_(PASSIVE_LEVEL)
 NTSTATUS GCN_AdapterEvtDriverDeviceAdd(
 	_In_    WDFDRIVER       aDriver,
 	_Inout_ PWDFDEVICE_INIT aDeviceInit)
@@ -78,6 +80,7 @@ Exit:
 	return status;
 }
 
+_IRQL_requires_(PASSIVE_LEVEL)
 VOID GCN_AdapterEvtDriverContextCleanup(
 	_In_ WDFOBJECT DriverObject)
 {

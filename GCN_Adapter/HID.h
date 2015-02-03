@@ -25,6 +25,7 @@ extern CONST HID_DESCRIPTOR HIDDescriptor;
  *	@returns C string representation of the given IOCTL code.
  *
  */
+_IRQL_requires_min_(PASSIVE_LEVEL)
 PCHAR DbgHidInternalIoctlString(_In_ ULONG aIoControlCode);
 
 #endif//_GCN_ADAPTER_HID_H_
