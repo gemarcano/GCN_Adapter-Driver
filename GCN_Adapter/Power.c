@@ -31,7 +31,8 @@ PCHAR DbgDevicePowerString(_In_ WDF_POWER_DEVICE_STATE Type)
 	}
 }
 
-NTSTATUS GCN_AdapterEvtDeviceD0Entry(WDFDEVICE aDevice, WDF_POWER_DEVICE_STATE aPreviousState)
+NTSTATUS GCN_AdapterEvtDeviceD0Entry(
+	WDFDEVICE aDevice, WDF_POWER_DEVICE_STATE aPreviousState)
 {
 	PDEVICE_CONTEXT pDeviceContext;
 	NTSTATUS status;
@@ -45,11 +46,13 @@ NTSTATUS GCN_AdapterEvtDeviceD0Entry(WDFDEVICE aDevice, WDF_POWER_DEVICE_STATE a
 		DbgDevicePowerString(aPreviousState));
 
 	//Start the continuous reader here...
-	status = WdfIoTargetStart(WdfUsbTargetPipeGetIoTarget(pDeviceContext->interruptReadPipe));
+	status = WdfIoTargetStart(
+		WdfUsbTargetPipeGetIoTarget(pDeviceContext->interruptReadPipe));
 	status = STATUS_SUCCESS;
 	if (!NT_SUCCESS(status))
 	{
-		TraceEvents(TRACE_LEVEL_ERROR, TRACE_POWER, "Failed to start interrupt pipe %!STATUS!\n", status);
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_POWER,
+			"Failed to start interrupt pipe %!STATUS!\n", status);
 		goto End;
 	}
 
@@ -62,11 +65,13 @@ End:
 		// Kill the continuous reader since if this operation failed, the driver is being unloaded...
 		if (isTargetStarted)
 		{
-			WdfIoTargetStop(WdfUsbTargetPipeGetIoTarget(pDeviceContext->interruptReadPipe), WdfIoTargetCancelSentIo);
+			WdfIoTargetStop(WdfUsbTargetPipeGetIoTarget(
+				pDeviceContext->interruptReadPipe), WdfIoTargetCancelSentIo);
 		}
 	}
 
-	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_POWER, "<--GCN_AdapterEvtEvtDeviceD0Entry\n");
+	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_POWER,
+		"<--GCN_AdapterEvtEvtDeviceD0Entry\n");
 
 	return status;
 }
@@ -83,9 +88,11 @@ NTSTATUS GCN_AdapterEvtDeviceD0Exit(WDFDEVICE aDevice, WDF_POWER_DEVICE_STATE aT
 
 	pDeviceContext = DeviceGetContext(aDevice);
 
-	WdfIoTargetStop(WdfUsbTargetPipeGetIoTarget(pDeviceContext->interruptReadPipe), WdfIoTargetCancelSentIo);
+	WdfIoTargetStop(WdfUsbTargetPipeGetIoTarget(
+		pDeviceContext->interruptReadPipe), WdfIoTargetCancelSentIo);
 
-	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_POWER, "<--GCN_AdapterEvtDeviceD0Exit\n");
+	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_POWER,
+		"<--GCN_AdapterEvtDeviceD0Exit\n");
 
 	return STATUS_SUCCESS;
 }

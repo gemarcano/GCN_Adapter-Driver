@@ -59,7 +59,8 @@ NTSTATUS GCN_AdapterCreateDevice(
 	}
 
 	//Initialize spinlock for data synchronization
-	status = WdfSpinLockCreate(&deviceAttributes, &deviceContext->dataLock); //Attributes is already initialized to use the device as the parent object
+	//Attributes are already initialized to use the device as the parent object
+	status = WdfSpinLockCreate(&deviceAttributes, &deviceContext->dataLock);
 	if (!NT_SUCCESS(status))
 	{
 		goto Error;
@@ -122,10 +123,10 @@ NTSTATUS GCN_AdapterEvtDevicePrepareHardware(
 	// Create a USB device handle if it doesn't already exist
 	if (pDeviceContext->usbDevice == NULL) {
 
-		//
-		// Supposedly version of 602 enables newer capabilities of the USB driver
-		// stack in Windows 8 and up? Not sure if we're using these or not, sticking
-		// to the example code in this case until there's a reason not to do so.
+		//Supposedly version of 602 enables newer capabilities of the USB driver
+		//stack in Windows 8 and up? Not sure if we're using these or not,
+		//sticking to the example code in this case until there's a reason not
+		//to do so.
 		WDF_USB_DEVICE_CREATE_CONFIG_INIT(
 			&createParams,
 			USBD_CLIENT_CONTRACT_VERSION_602);
@@ -138,15 +139,20 @@ NTSTATUS GCN_AdapterEvtDevicePrepareHardware(
 
 		if (!NT_SUCCESS(status))
 		{
-			TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE,
-						"WdfUsbTargetDeviceCreateWithParameters failed 0x%x", status);
+			TraceEvents(
+				TRACE_LEVEL_ERROR,
+				TRACE_DEVICE, 
+				"WdfUsbTargetDeviceCreateWithParameters failed 0x%x",
+				status);
+
 			return status;
 		}
 	}
 
 	WDF_USB_DEVICE_INFORMATION_INIT(&deviceInfo);
 
-	status = WdfUsbTargetDeviceRetrieveInformation(pDeviceContext->usbDevice, &deviceInfo);
+	status = WdfUsbTargetDeviceRetrieveInformation(
+		pDeviceContext->usbDevice, &deviceInfo);
 
 	if (NT_SUCCESS(status))
 	{
@@ -186,12 +192,22 @@ NTSTATUS GCN_AdapterEvtDevicePrepareHardware(
 		usbDeviceDescriptor);
 
 	//Send Commands to device to initialize it
-	WDF_USB_CONTROL_SETUP_PACKET_INIT_CLASS(&setup_packet, BMREQUEST_HOST_TO_DEVICE, BMREQUEST_TO_INTERFACE, 11, 1, 0);
-	status = WdfUsbTargetDeviceSendControlTransferSynchronously(pDeviceContext->usbDevice, NULL, NULL, &setup_packet, NULL, NULL);
+	WDF_USB_CONTROL_SETUP_PACKET_INIT_CLASS(
+		&setup_packet,
+		BMREQUEST_HOST_TO_DEVICE,
+		BMREQUEST_TO_INTERFACE,
+		11,
+		1,
+		0);
+
+	status = WdfUsbTargetDeviceSendControlTransferSynchronously(
+		pDeviceContext->usbDevice, NULL, NULL, &setup_packet, NULL, NULL);
+
 	if (!NT_SUCCESS(status))
 	{
 		TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE,
-			"WdfUsbTargetDeviceSendControlTransferSynchronously (SET_PROTOCOL) failed  %!STATUS!\n", status);
+			"WdfUsbTargetDeviceSendControlTransferSynchronously"
+			" (SET_PROTOCOL) failed  %!STATUS!\n", status);
 		return status;
 	}
 
@@ -264,6 +280,7 @@ NTSTATUS SelectInterfaces(
 	status = WdfUsbTargetDeviceSelectConfig(pDeviceContext->usbDevice,
 		WDF_NO_OBJECT_ATTRIBUTES,
 		&configParams);
+
 	if (!NT_SUCCESS(status))
 	{
 		TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE,
@@ -275,7 +292,8 @@ NTSTATUS SelectInterfaces(
 	pDeviceContext->usbInterface =
 		configParams.Types.SingleInterface.ConfiguredUsbInterface;
 
-	numberConfiguredPipes = configParams.Types.SingleInterface.NumberConfiguredPipes;
+	numberConfiguredPipes =
+		configParams.Types.SingleInterface.NumberConfiguredPipes;
 
 	//Get pipes and store them in context
 	for (index = 0; index < numberConfiguredPipes; index++)
@@ -329,11 +347,13 @@ NTSTATUS GCN_AdapterPnPInitialize(
 	WDF_PNPPOWER_EVENT_CALLBACKS pnpPowerCallbacks;
 
 	WDF_PNPPOWER_EVENT_CALLBACKS_INIT(&pnpPowerCallbacks);
-	pnpPowerCallbacks.EvtDevicePrepareHardware = GCN_AdapterEvtDevicePrepareHardware;
+	pnpPowerCallbacks.EvtDevicePrepareHardware =
+		GCN_AdapterEvtDevicePrepareHardware;
 	
 	pnpPowerCallbacks.EvtDeviceD0Entry = GCN_AdapterEvtDeviceD0Entry;
 	pnpPowerCallbacks.EvtDeviceD0Exit = GCN_AdapterEvtDeviceD0Exit;
-	pnpPowerCallbacks.EvtDeviceSelfManagedIoFlush = GCN_AdapterEvtDeviceSelfManagedIoFlush;
+	pnpPowerCallbacks.EvtDeviceSelfManagedIoFlush =
+		GCN_AdapterEvtDeviceSelfManagedIoFlush;
 
 	WdfDeviceInitSetPnpPowerEventCallbacks(aDeviceInit, &pnpPowerCallbacks);
 
@@ -373,9 +393,11 @@ NTSTATUS GCN_AdapterQueueInitialize(_In_ WDFDEVICE aDevice)
 	// configure-fowarded using WdfDeviceConfigureRequestDispatching to go to
 	// other queues get dispatched here.
 	//
-	WDF_IO_QUEUE_CONFIG_INIT_DEFAULT_QUEUE(&queueConfig, WdfIoQueueDispatchParallel);
+	WDF_IO_QUEUE_CONFIG_INIT_DEFAULT_QUEUE(
+		&queueConfig, WdfIoQueueDispatchParallel);
 
-	queueConfig.EvtIoInternalDeviceControl = GCN_AdapterEvtInternalDeviceControl;
+	queueConfig.EvtIoInternalDeviceControl =
+		GCN_AdapterEvtInternalDeviceControl;
 	queueConfig.EvtIoDeviceControl = GCN_AdapterEvtInternalDeviceControl;
 
 	status = WdfIoQueueCreate(

@@ -67,11 +67,12 @@ VOID GCN_AdapterEvtInternalDeviceControl(
 		// be retrived and completd when continuous reader reads new data
 		// from the device.
 		//
-		status = WdfRequestForwardToIoQueue(aRequest, devContext->interruptMsgQueue);
+		status = WdfRequestForwardToIoQueue(
+			aRequest, devContext->interruptMsgQueue);
 		if (!NT_SUCCESS(status))
 		{
 			TraceEvents(TRACE_LEVEL_ERROR, TRACE_IOCTL,
-				"WdfRequestForwardToIoQueue failed with status: 0x%x\n", status);
+				"WdfRequestForwardToIoQueue failed with status 0x%x\n", status);
 
 			WdfRequestComplete(aRequest, status);
 		}
@@ -80,26 +81,27 @@ VOID GCN_AdapterEvtInternalDeviceControl(
 
 		//
 		// This feature is only supported on WinXp and later. Compiling in W2K 
-		// build environment will fail without this conditional preprocessor statement.
+		// build environment will fail without this conditional preprocessor
+		// statement.
 		//
 	case IOCTL_HID_SEND_IDLE_NOTIFICATION_REQUEST:
 
 		//
-		// Hidclass sends this IOCTL for devices that have opted-in for Selective
-		// Suspend feature. This feature is enabled by adding a registry value
-		// "SelectiveSuspendEnabled" = 1 in the hardware key through inf file 
-		// (see hidusbfx2.inf). Since hidclass is the power policy owner for 
-		// this stack, it controls when to send idle notification and when to 
-		// cancel it. This IOCTL is passed to USB stack. USB stack pends it. 
-		// USB stack completes the request when it determines that the device is
-		// idle. Hidclass's idle notification callback get called that requests a 
-		// wait-wake Irp and subsequently powers down the device. 
-		// The device is powered-up either when a handle is opened for the PDOs 
-		// exposed by hidclass, or when usb stack completes wait
-		// wake request. In the first case, hidclass cancels the notification 
-		// request (pended with usb stack), cancels wait-wake Irp and powers up
-		// the device. In the second case, an external wake event triggers completion
-		// of wait-wake irp and powering up of device.
+		// Hidclass sends this IOCTL for devices that have opted-in for
+		// Selective Suspend feature. This feature is enabled by adding a
+		// registry value "SelectiveSuspendEnabled" = 1 in the hardware key
+		// through inf file (see hidusbfx2.inf). Since hidclass is the power
+		// policy owner for this stack, it controls when to send idle
+		// notification and when to cancel it. This IOCTL is passed to USB
+		// stack. USB stack pends it. USB stack completes the request when it
+		// determines that the device is idle. Hidclass's idle notification
+		// callback get called that requests a wait-wake Irp and subsequently
+		// powers down the device. The device is powered-up either when a handle
+		// is opened for the PDOs exposed by hidclass, or when usb stack
+		// completes wait wake request. In the first case, hidclass cancels the
+		// notification request (pended with usb stack), cancels wait-wake Irp
+		// and powers up the device. In the second case, an external wake event
+		// triggers completion of wait-wake irp and powering up of device.
 		//
 		status = GCN_AdapterSendIdleNotification(aRequest);
 		if (!NT_SUCCESS(status))
@@ -218,18 +220,19 @@ NTSTATUS GCN_AdapterIoctlHIDReadReportHandler(_In_ WDFDEVICE aDevice)
 
 	pDevContext = DeviceGetContext(aDevice);
 
-	status = WdfIoQueueRetrieveNextRequest(pDevContext->interruptMsgQueue, &request);
+	status = WdfIoQueueRetrieveNextRequest(
+		pDevContext->interruptMsgQueue, &request);
 
 	if (NT_SUCCESS(status))
 	{
 		//
-		// IOCTL_HID_READ_REPORT is METHOD_NEITHER so WdfRequestRetrieveOutputBuffer
-		// will correctly retrieve buffer from Irp->UserBuffer. Remember that
-		// HIDCLASS provides the buffer in the Irp->UserBuffer field
-		// irrespective of the ioctl buffer type. However, framework is very
-		// strict about type checking. You cannot get Irp->UserBuffer by using
-		// WdfRequestRetrieveOutputMemory if the ioctl is not a METHOD_NEITHER
-		// internal ioctl.
+		// IOCTL_HID_READ_REPORT is METHOD_NEITHER so
+		// WdfRequestRetrieveOutputBuffer will correctly retrieve buffer from
+		// Irp->UserBuffer. Remember that HIDCLASS provides the buffer in the
+		// Irp->UserBuffer field irrespective of the ioctl buffer type. However,
+		// framework is very strict about type checking. You cannot get
+		// Irp->UserBuffer by using  WdfRequestRetrieveOutputMemory if the ioctl
+		// is not a METHOD_NEITHER internal ioctl.
 
 		bytesToCopy = sizeof(GCN_ControllerReport);
 		status = WdfRequestRetrieveOutputBuffer(
@@ -240,8 +243,11 @@ NTSTATUS GCN_AdapterIoctlHIDReadReportHandler(_In_ WDFDEVICE aDevice)
 
 		if (!NT_SUCCESS(status))
 		{
-			TraceEvents(TRACE_LEVEL_ERROR, TRACE_IOCTL,
-				"WdfRequestRetrieveOutputBuffer failed with status: 0x%x\n", status);
+			TraceEvents(
+				TRACE_LEVEL_ERROR,
+				TRACE_IOCTL,
+				"WdfRequestRetrieveOutputBuffer failed with status: 0x%x\n",
+				status);
 		}
 		else
 		{
@@ -253,7 +259,10 @@ NTSTATUS GCN_AdapterIoctlHIDReadReportHandler(_In_ WDFDEVICE aDevice)
 	}
 	else if (status != STATUS_NO_MORE_ENTRIES)
 	{
-		TraceEvents(TRACE_LEVEL_ERROR, TRACE_IOCTL, "WdfIoQueueRetrieveNextRequest status %08x\n", status);
+		TraceEvents(
+			TRACE_LEVEL_ERROR,
+			TRACE_IOCTL, "WdfIoQueueRetrieveNextRequest status %08x\n",
+			status);
 	}
 
 	return status;
@@ -326,12 +335,13 @@ NTSTATUS GCN_AdapterGetDeviceAttributes(
 	NTSTATUS status;
 	PHID_DEVICE_ATTRIBUTES deviceAttributes = NULL;
 	PUSB_DEVICE_DESCRIPTOR usbDeviceDescriptor = NULL;
-	PDEVICE_CONTEXT deviceInfo = NULL;
+	PDEVICE_CONTEXT pDeviceContext = NULL;
 
 	TraceEvents(TRACE_LEVEL_VERBOSE, TRACE_IOCTL,
 		"HidFx2GetDeviceAttributes Entry\n");
 
-	deviceInfo = DeviceGetContext(WdfIoQueueGetDevice(WdfRequestGetIoQueue(aRequest)));
+	pDeviceContext = DeviceGetContext(
+		WdfIoQueueGetDevice(WdfRequestGetIoQueue(aRequest)));
 
 	//
 	// This IOCTL is METHOD_NEITHER so WdfRequestRetrieveOutputMemory
@@ -355,7 +365,8 @@ NTSTATUS GCN_AdapterGetDeviceAttributes(
 		return status;
 	}
 
-	usbDeviceDescriptor = WdfMemoryGetBuffer(deviceInfo->usbDeviceDescriptor, NULL);
+	usbDeviceDescriptor = WdfMemoryGetBuffer(
+		pDeviceContext->usbDeviceDescriptor, NULL);
 
 	deviceAttributes->Size = sizeof(HID_DEVICE_ATTRIBUTES);
 	deviceAttributes->VendorID = usbDeviceDescriptor->idVendor;
@@ -445,7 +456,8 @@ NTSTATUS GCN_AdapterSendIdleNotification(_In_ WDFREQUEST Request)
 	IO_STACK_LOCATION          nextIrpStack;
 
 	device = WdfIoQueueGetDevice(WdfRequestGetIoQueue(Request));
-	currentIrpStack = IoGetCurrentIrpStackLocation(WdfRequestWdmGetIrp(Request));
+	currentIrpStack =
+		IoGetCurrentIrpStackLocation(WdfRequestWdmGetIrp(Request));
 
 	//
 	// Convert the request to corresponding USB Idle notification request
@@ -463,7 +475,8 @@ NTSTATUS GCN_AdapterSendIdleNotification(_In_ WDFREQUEST Request)
 	ASSERT(sizeof(HID_SUBMIT_IDLE_NOTIFICATION_CALLBACK_INFO)
 		== sizeof(USB_IDLE_CALLBACK_INFO));
 
-	if (sizeof(HID_SUBMIT_IDLE_NOTIFICATION_CALLBACK_INFO) != sizeof(USB_IDLE_CALLBACK_INFO))
+	if (sizeof(HID_SUBMIT_IDLE_NOTIFICATION_CALLBACK_INFO) !=
+		sizeof(USB_IDLE_CALLBACK_INFO))
 	{
 
 		status = STATUS_INFO_LENGTH_MISMATCH;
@@ -530,7 +543,9 @@ NTSTATUS GCN_AdapterCalibrate(
 	WdfRequestGetParameters(aRequest, &params);
 
 	// This IOCTL is METHOD_BUFFER, use SystemBuffer to get memory
-	if (params.Parameters.DeviceIoControl.InputBufferLength < sizeof(IOCTL_GCN_Adapter_Calibrate_Data)) {
+	if (params.Parameters.DeviceIoControl.InputBufferLength <
+		sizeof(IOCTL_GCN_Adapter_Calibrate_Data))
+	{
 		status = STATUS_BUFFER_TOO_SMALL;
 		TraceEvents(TRACE_LEVEL_ERROR, TRACE_IOCTL,
 			"Userbuffer is small 0x%x\n", status);
@@ -538,7 +553,8 @@ NTSTATUS GCN_AdapterCalibrate(
 	}
 
 	pData = WdfRequestWdmGetIrp(aRequest)->AssociatedIrp.SystemBuffer;
-	if (pData == NULL) {
+	if (pData == NULL)
+	{
 		status = STATUS_INVALID_DEVICE_REQUEST;
 		TraceEvents(TRACE_LEVEL_ERROR, TRACE_IOCTL,
 			"Irp->UserBuffer is NULL 0x%x\n", status);
@@ -594,7 +610,9 @@ NTSTATUS GCN_AdapterSetDeadzone(
 	WdfRequestGetParameters(aRequest, &params);
 
 	// This IOCTL is METHOD_BUFFER, use SystemBuffer to get memory
-	if (params.Parameters.DeviceIoControl.InputBufferLength < sizeof(IOCTL_GCN_Adapter_Deadzone_Data)) {
+	if (params.Parameters.DeviceIoControl.InputBufferLength <
+		sizeof(IOCTL_GCN_Adapter_Deadzone_Data))
+	{
 		status = STATUS_BUFFER_TOO_SMALL;
 		TraceEvents(TRACE_LEVEL_ERROR, TRACE_IOCTL,
 			"Userbuffer is small 0x%x\n", status);
@@ -602,7 +620,8 @@ NTSTATUS GCN_AdapterSetDeadzone(
 	}
 
 	pData = WdfRequestWdmGetIrp(aRequest)->AssociatedIrp.SystemBuffer;
-	if (pData == NULL) {
+	if (pData == NULL)
+	{
 		status = STATUS_INVALID_DEVICE_REQUEST;
 		TraceEvents(TRACE_LEVEL_ERROR, TRACE_IOCTL,
 			"Irp->UserBuffer is NULL 0x%x\n", status);
@@ -611,7 +630,8 @@ NTSTATUS GCN_AdapterSetDeadzone(
 
 	status = STATUS_SUCCESS;
 	
-	GCN_Controller_Status_Update_Deadzone(&pDeviceContext->controllerStatus[pData->controller], &pData->data);
+	GCN_Controller_Status_Update_Deadzone(
+		&pDeviceContext->controllerStatus[pData->controller], &pData->data);
 	
 	WdfRequestSetInformation(aRequest, 0);
 	WdfRequestComplete(aRequest, status);
@@ -638,7 +658,9 @@ NTSTATUS GCN_AdapterSetRumble(
 	WdfRequestGetParameters(aRequest, &params);
 
 	// This IOCTL is METHOD_BUFFER, use SystemBuffer to get memory
-	if (params.Parameters.DeviceIoControl.InputBufferLength < sizeof(IOCTL_GCN_Adapter_Rumble_Data)) {
+	if (params.Parameters.DeviceIoControl.InputBufferLength <
+		sizeof(IOCTL_GCN_Adapter_Rumble_Data))
+	{
 		status = STATUS_BUFFER_TOO_SMALL;
 		TraceEvents(TRACE_LEVEL_ERROR, TRACE_IOCTL,
 			"Userbuffer is small 0x%x\n", status);
@@ -680,8 +702,10 @@ NTSTATUS GCN_AdapterGetSensitivity(
 	WdfRequestGetParameters(aRequest, &params);
 
 	// This IOCTL is METHOD_BUFFER, use SystemBuffer to get memory
-	if (params.Parameters.DeviceIoControl.InputBufferLength < sizeof(IOCTL_GCN_Adapter_Deadzone_Data) ||
-		params.Parameters.DeviceIoControl.OutputBufferLength < sizeof(IOCTL_GCN_Adapter_Deadzone_Data))
+	if ((params.Parameters.DeviceIoControl.InputBufferLength <
+			sizeof(IOCTL_GCN_Adapter_Deadzone_Data)) ||
+		(params.Parameters.DeviceIoControl.OutputBufferLength <
+			sizeof(IOCTL_GCN_Adapter_Deadzone_Data)))
 	{
 		status = STATUS_BUFFER_TOO_SMALL;
 		TraceEvents(TRACE_LEVEL_ERROR, TRACE_IOCTL,

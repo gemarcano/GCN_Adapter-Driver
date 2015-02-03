@@ -1,10 +1,14 @@
 #include "Include.h"
 #include "gcn_controller.tmh"
 
-static void null_handle_shoulder(BYTE *axis, BYTE zero, double center, double sensitivity) {}
-static void null_handle_axis(BYTE axis[2], BYTE zero[2], double center[2], double sensitivity) {}
-static void linear_handle_shoulder(BYTE *axis, BYTE zero, double center, double sensitivity);
-static void linear_handle_axis(BYTE axis[2], BYTE zero[2], double center[2], double sensitivity);
+static void null_handle_shoulder(
+	BYTE *axis, BYTE zero, double center, double sensitivity) {}
+static void null_handle_axis(
+	BYTE axis[2], BYTE zero[2], double center[2], double sensitivity) {}
+static void linear_handle_shoulder(
+	BYTE *axis, BYTE zero, double center, double sensitivity);
+static void linear_handle_axis(
+	BYTE axis[2], BYTE zero[2], double center[2], double sensitivity);
 
 #define DEADZONE 35
 
@@ -12,8 +16,16 @@ GCN_Controller_Status GCN_Controller_Status_Zero =
 {
 	.lastControllerState = 0,
 	.rumble = 0,
-	.deadzone.axis = { { .mode = GCN_Controller_Deadzone_LINEAR, .deadzone = DEADZONE }, { .mode = (BYTE)GCN_Controller_Deadzone_LINEAR, .deadzone = DEADZONE } },
-	.deadzone.shoulder = { { .mode = GCN_Controller_Deadzone_LINEAR, .deadzone = DEADZONE }, { .mode = (BYTE)GCN_Controller_Deadzone_LINEAR, .deadzone = DEADZONE } },
+	.deadzone.axis =
+	{
+		{ .mode = GCN_Controller_Deadzone_LINEAR, .deadzone = DEADZONE },
+		{ .mode = (BYTE)GCN_Controller_Deadzone_LINEAR, .deadzone = DEADZONE }
+	},
+	.deadzone.shoulder =
+	{
+		{ .mode = GCN_Controller_Deadzone_LINEAR, .deadzone = DEADZONE },
+		{ .mode = (BYTE)GCN_Controller_Deadzone_LINEAR, .deadzone = DEADZONE }
+	},
 	.function_axis = { linear_handle_axis, linear_handle_axis },
 	.function_shoulder = { linear_handle_shoulder, linear_handle_shoulder}
 };
@@ -23,7 +35,9 @@ void GCN_Controller_Status_Init(GCN_Controller_Status *aControllerStatus)
 	*aControllerStatus = GCN_Controller_Status_Zero;
 }
 
-void GCN_Controller_Status_Update_Deadzone(GCN_Controller_Status *apControllerStatus, GCN_Controller_Deadzone_Status *apNewStatus)
+void GCN_Controller_Status_Update_Deadzone(
+	GCN_Controller_Status *apControllerStatus,
+	GCN_Controller_Deadzone_Status *apNewStatus)
 {
 	int i = 0;
 	apControllerStatus->deadzone = *apNewStatus;
@@ -89,7 +103,9 @@ NTSTATUS GCN_Adapter_Rumble(
 	adapterData = apDeviceContext->adapterData;
 	WdfSpinLockRelease(apDeviceContext->dataLock);
 
-	if ((adapterData.port[0].status.powered && (apDeviceContext->rumbleStatus != aRumble)) || (apDeviceContext->rumbleStatus && !adapterData.port[0].status.powered))
+	if ((adapterData.port[0].status.powered &&
+			(apDeviceContext->rumbleStatus != aRumble)) ||
+		(apDeviceContext->rumbleStatus && !adapterData.port[0].status.powered))
 	{
 		if (adapterData.port[0].status.powered)
 		{
@@ -102,21 +118,35 @@ NTSTATUS GCN_Adapter_Rumble(
 
 		for (i = 0; i < 4; ++i)
 		{
-			data[i + 1] = apDeviceContext->controllerStatus[i].rumble = (newStatus >> i) & 0x01;
+			data[i + 1] =
+				apDeviceContext->controllerStatus[i].rumble =
+				(newStatus >> i) & 0x01;
 		}
 
-		WDF_REQUEST_REUSE_PARAMS_INIT(&params, WDF_REQUEST_REUSE_NO_FLAGS, STATUS_SUCCESS);
+		WDF_REQUEST_REUSE_PARAMS_INIT(
+			&params, WDF_REQUEST_REUSE_NO_FLAGS, STATUS_SUCCESS);
 		WdfRequestReuse(apDeviceContext->rumbleRequest, &params);
 
-		status = WdfUsbTargetPipeFormatRequestForWrite(apDeviceContext->interruptWritePipe, apDeviceContext->rumbleRequest, apDeviceContext->rumbleMemory, NULL);
+		status = WdfUsbTargetPipeFormatRequestForWrite(
+			apDeviceContext->interruptWritePipe,
+			apDeviceContext->rumbleRequest,
+			apDeviceContext->rumbleMemory, NULL);
+
 		if (!NT_SUCCESS(status))
 		{
 			goto Exit;
 		}
-		WdfRequestSetCompletionRoutine(apDeviceContext->rumbleRequest, GCN_Adapter_Rumble_Completion, NULL);
+		WdfRequestSetCompletionRoutine(
+			apDeviceContext->rumbleRequest,
+			GCN_Adapter_Rumble_Completion,
+			NULL);
 
-		WdfRequestSend(apDeviceContext->rumbleRequest, WdfUsbTargetPipeGetIoTarget(apDeviceContext->interruptWritePipe), NULL);
-		apDeviceContext->rumbleStatus = newStatus; //Should it be protected?
+		WdfRequestSend(
+			apDeviceContext->rumbleRequest,
+			WdfUsbTargetPipeGetIoTarget(apDeviceContext->interruptWritePipe),
+			NULL);
+		
+		apDeviceContext->rumbleStatus = newStatus; //FIXME Should it be protected?
 	}
 	else
 	{
@@ -130,7 +160,8 @@ Exit:
 	return status;
 }
 
-NTSTATUS GCN_Controller_Rumble(PDEVICE_CONTEXT _In_ apDeviceContext, int _In_ aIndex, BOOLEAN _In_ aRumble)
+NTSTATUS GCN_Controller_Rumble(
+	PDEVICE_CONTEXT _In_ apDeviceContext, int _In_ aIndex, BOOLEAN _In_ aRumble)
 {
 	NTSTATUS status = STATUS_BAD_DATA;
 	if (aIndex < 4)
@@ -155,7 +186,8 @@ NTSTATUS GCN_Controller_Rumble(PDEVICE_CONTEXT _In_ apDeviceContext, int _In_ aI
 	return status;
 }
 
-NTSTATUS GCN_Controller_Calibrate(PDEVICE_CONTEXT _In_ apDeviceContext, int _In_ aIndex)
+NTSTATUS GCN_Controller_Calibrate(
+	PDEVICE_CONTEXT _In_ apDeviceContext, int _In_ aIndex)
 {
 	NTSTATUS status = STATUS_SUCCESS;
 	GCN_AdapterData calibrationData;
@@ -170,7 +202,8 @@ NTSTATUS GCN_Controller_Calibrate(PDEVICE_CONTEXT _In_ apDeviceContext, int _In_
 	}
 	else if (aIndex < 4)
 	{
-		apDeviceContext->calibrationData.port[aIndex] = calibrationData.port[aIndex];
+		apDeviceContext->calibrationData.port[aIndex] =
+			calibrationData.port[aIndex];
 	}
 	else
 	{
@@ -185,7 +218,9 @@ NTSTATUS GCN_Controller_Calibrate(PDEVICE_CONTEXT _In_ apDeviceContext, int _In_
 static __inline double dist_2d(double vector1[2], double vector2[2])
 {
 	//sqrt is an intrinsic function of the compiler, how convenient
-	return sqrt((vector1[0] - vector2[0])*(vector1[0] - vector2[0]) + (vector1[1] - vector2[1])*(vector1[1] - vector2[1]));
+	return sqrt(
+		(vector1[0] - vector2[0])*(vector1[0] - vector2[0]) +
+			(vector1[1] - vector2[1])*(vector1[1] - vector2[1]));
 }
 
 static __inline double scaled_value(double distance, double sensitivity)
@@ -193,24 +228,30 @@ static __inline double scaled_value(double distance, double sensitivity)
 	return (distance/255. - sensitivity) / (1 - sensitivity);
 }
 
-static void linear_handle_axis(BYTE axis[2], BYTE zero[2], double center[2], double sensitivity)
+static void linear_handle_axis(
+	BYTE axis[2], BYTE zero[2], double center[2], double sensitivity)
 {
 	double newAxis[2] = { axis[0], axis[1] };
 	double distance = dist_2d( newAxis, center);
-	if (abs(distance) < sensitivity * 255.) //abs is a compiler intrinsic function
-	{
+	if (abs(distance) < sensitivity * 255.) 
+	{//abs is a compiler intrinsic function
 		distance = 0;
 		memcpy(axis, zero, 2);
 	}
 	else
 	{
 		double newMagnitude = scaled_value(distance, sensitivity);
-		axis[0] = (BYTE)(255 * newMagnitude * (newAxis[0] - center[0]) / distance + zero[0]);
-		axis[1] = (BYTE)(255 * newMagnitude * (newAxis[1] - center[1]) / distance + zero[1]);
+		axis[0] =
+			(BYTE)(255 * newMagnitude * (newAxis[0] - center[0]) /
+				distance + zero[0]);
+		axis[1] =
+			(BYTE)(255 * newMagnitude * (newAxis[1] - center[1]) /
+				distance + zero[1]);
 	}
 }
 
-static void linear_handle_shoulder(BYTE *axis, BYTE zero, double center, double sensitivity)
+static void linear_handle_shoulder(
+	BYTE *axis, BYTE zero, double center, double sensitivity)
 {
 	double distance = *axis - center;
 	if (distance < sensitivity * 255)
@@ -225,7 +266,10 @@ static void linear_handle_shoulder(BYTE *axis, BYTE zero, double center, double 
 	}
 }
 
-static void handle_null_zones(GCN_Controller_Input _In_ *apCal, GCN_Controller_Status _In_ *apStatus, GCN_Controller_Input _Inout_ *apOutput)
+static void handle_null_zones(
+	GCN_Controller_Input _In_ *apCal,
+	GCN_Controller_Status _In_ *apStatus,
+	GCN_Controller_Input _Inout_ *apOutput)
 {
 	double center[3][2] =
 	{
@@ -234,10 +278,29 @@ static void handle_null_zones(GCN_Controller_Input _In_ *apCal, GCN_Controller_S
 		{ apCal->shoulder[0], apCal->shoulder[1] }
 	};
 	//Handle null zones
-	apStatus->function_axis[0]((BYTE*)&apOutput->axis[0], (BYTE*)&GCN_AdapterControllerZero.input.axis[0], center[0], apStatus->deadzone.axis[0].deadzone / 255.);
-	apStatus->function_axis[1]((BYTE*)&apOutput->axis[1], (BYTE*)&GCN_AdapterControllerZero.input.axis[1], center[1], apStatus->deadzone.axis[1].deadzone / 255.);
-	apStatus->function_shoulder[0](&apOutput->shoulder[0], GCN_AdapterControllerZero.input.shoulder[0], center[2][0], apStatus->deadzone.shoulder[0].deadzone / 255.);
-	apStatus->function_shoulder[1](&apOutput->shoulder[1], GCN_AdapterControllerZero.input.shoulder[1], center[2][1], apStatus->deadzone.shoulder[1].deadzone / 255.);
+	apStatus->function_axis[0](
+		(BYTE*)&apOutput->axis[0],
+		(BYTE*)&GCN_AdapterControllerZero.input.axis[0],
+		center[0],
+		apStatus->deadzone.axis[0].deadzone / 255.);
+
+	apStatus->function_axis[1](
+		(BYTE*)&apOutput->axis[1],
+		(BYTE*)&GCN_AdapterControllerZero.input.axis[1],
+		center[1],
+		apStatus->deadzone.axis[1].deadzone / 255.);
+	
+	apStatus->function_shoulder[0](
+		&apOutput->shoulder[0],
+		GCN_AdapterControllerZero.input.shoulder[0],
+		center[2][0],
+		apStatus->deadzone.shoulder[0].deadzone / 255.);
+	
+	apStatus->function_shoulder[1](
+		&apOutput->shoulder[1],
+		GCN_AdapterControllerZero.input.shoulder[1],
+		center[2][1],
+		apStatus->deadzone.shoulder[1].deadzone / 255.);
 }
 
 //This needs to cycle through the 4 controllers
@@ -254,7 +317,11 @@ void prepare_report(
 	
 	if (!apAdapterData->port[id - 1].status.type)
 	{
-		memcpy(apControllerReport, &GCN_AdapterControllerZero, sizeof(*apControllerReport));
+		memcpy(
+			apControllerReport,
+			&GCN_AdapterControllerZero,
+			sizeof(*apControllerReport));
+
 		if (apDeviceContext->controllerStatus[id - 1].lastControllerState)
 		{
 			apDeviceContext->controllerStatus[id - 1].lastControllerState = 0;
@@ -263,11 +330,16 @@ void prepare_report(
 	else
 	{
 		data = *apAdapterData;
-		memcpy(&(apControllerReport->input), &(data.port[id - 1].input), sizeof(apControllerReport->input));
+		memcpy(
+			&(apControllerReport->input),
+			&(data.port[id - 1].input),
+			sizeof(apControllerReport->input));
 
-		apControllerReport->input.axis[0].Y = ~apControllerReport->input.axis[0].Y;
+		apControllerReport->input.axis[0].Y =
+			~apControllerReport->input.axis[0].Y;
 
-		handle_null_zones(&cal->port[id-1].input, &status, &apControllerReport->input);
+		handle_null_zones(
+			&cal->port[id-1].input, &status, &apControllerReport->input);
 
 		//Detect if the device was previously turned off. If so, calibrate
 		if (!apDeviceContext->controllerStatus[id - 1].lastControllerState)

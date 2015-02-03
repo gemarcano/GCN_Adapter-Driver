@@ -29,12 +29,17 @@ VOID GCN_AdapterEvtIoRead(
 	status = WdfRequestRetrieveOutputMemory(Request, &reqMemory);
 	if (!NT_SUCCESS(status))
 	{
-		TraceEvents(TRACE_LEVEL_ERROR, TRACE_IO, "WdfRequestRetrieveOutputMemory failed %!STATUS!\n", status);
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_IO,
+			"WdfRequestRetrieveOutputMemory failed %!STATUS!\n", status);
 		goto Exit;
 	}
 
 	WdfSpinLockAcquire(pDeviceContext->dataLock);
-	memcpy(WdfMemoryGetBuffer(reqMemory, NULL), &pDeviceContext->adapterData, Length);
+	memcpy(
+		WdfMemoryGetBuffer(reqMemory, NULL),
+		&pDeviceContext->adapterData,
+		Length);
+
 	WdfSpinLockRelease(pDeviceContext->dataLock);
 
 	WdfRequestCompleteWithInformation(Request, status, Length);
@@ -64,8 +69,8 @@ VOID GCN_AdapterEvtIoWrite(
 
 	if (aLength != 5)
 	{
-		TraceEvents(TRACE_LEVEL_ERROR, TRACE_IO, "Transfer does not equal %d\n",
-			5);
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_IO,
+			"Transfer does not equal %d\n", 5);
 		status = STATUS_INVALID_PARAMETER;
 		goto Exit;
 	}
@@ -77,7 +82,8 @@ VOID GCN_AdapterEvtIoWrite(
 	status = WdfRequestRetrieveInputMemory(aRequest, &reqMemory);
 	if (!NT_SUCCESS(status))
 	{
-		TraceEvents(TRACE_LEVEL_ERROR, TRACE_IO, "WdfRequestRetrieveInputBuffer failed\n");
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_IO,
+			"WdfRequestRetrieveInputBuffer failed\n");
 		goto Exit;
 	}
 
@@ -102,7 +108,9 @@ VOID GCN_AdapterEvtIoWrite(
 		GCN_AdapterEvtRequestWriteCompletionRoutine,
 		pipe);
 
-	if (WdfRequestSend(aRequest, WdfUsbTargetPipeGetIoTarget(pipe), WDF_NO_SEND_OPTIONS) == FALSE)
+	if (WdfRequestSend(
+			aRequest, WdfUsbTargetPipeGetIoTarget(pipe), WDF_NO_SEND_OPTIONS)
+		== FALSE)
 	{
 		TraceEvents(TRACE_LEVEL_ERROR, TRACE_IO, "WdfRequestSend failed\n");
 		status = WdfRequestGetStatus(aRequest);
@@ -157,5 +165,3 @@ VOID GCN_AdapterEvtRequestWriteCompletionRoutine(
 
 	WdfRequestCompleteWithInformation(aRequest, status, bytesWritten);
 }
-
-

@@ -6,6 +6,9 @@
 #pragma alloc_text(PAGE, GCN_AdapterEvtUsbInterruptReadersFailed)
 #endif
 
+//number obtained from USB descriptor for endpoint
+#define GCN_ADAPTER_READ_LENGTH 37
+
 _IRQL_requires_(PASSIVE_LEVEL)
 NTSTATUS GCN_AdapterConfigContReaderForInterruptEndPoint(
 	_In_ PDEVICE_CONTEXT apDeviceContext)
@@ -21,8 +24,11 @@ NTSTATUS GCN_AdapterConfigContReaderForInterruptEndPoint(
 		apDeviceContext,    // Context
 		sizeof(UCHAR));   // TransferLength
 
-	contReaderConfig.EvtUsbTargetPipeReadersFailed = GCN_AdapterEvtUsbInterruptReadersFailed;
-	contReaderConfig.TransferLength = 37; //number obtained from USB descriptor for endpoint
+	contReaderConfig.EvtUsbTargetPipeReadersFailed =
+		GCN_AdapterEvtUsbInterruptReadersFailed;
+	
+	
+	contReaderConfig.TransferLength = GCN_ADAPTER_READ_LENGTH;
 	contReaderConfig.NumPendingReads = 0; //Use default
 
 	//Remember to actually call WdfIoTargetStart elsewhere to start the reader!
@@ -66,7 +72,8 @@ VOID GCN_AdapterEvtUsbInterruptPipeReadComplete(
 		return;
 	}
 
-	NT_ASSERT(aNumBytesTransferred == 37); //Number of bytes coming in from the device
+	//Number of bytes coming in from the device
+	NT_ASSERT(aNumBytesTransferred == GCN_ADAPTER_READ_LENGTH);
 	NT_ASSERT(aNumBytesTransferred == sizeof(pDeviceContext->adapterData));
 
 	pData = WdfMemoryGetBuffer(aBuffer, NULL);
@@ -79,8 +86,8 @@ VOID GCN_AdapterEvtUsbInterruptPipeReadComplete(
 		"GCN_AdapterEvtUsbInterruptPipeReadComplete matched: %x\n",
 		pDeviceContext->adapterData.signal == 0x21);
 
-	//Quickly, handle rumble information for controllers if any have gone offline
-	//Turn rumble off if it is enabled and power is removed
+	//Quickly, handle rumble information for controllers if any have gone
+	//offline. Turn rumble off if it is enabled and power is removed
 	if (!pData->port[0].status.powered)
 	{
 		GCN_Adapter_Rumble(pDeviceContext, 0);
@@ -105,4 +112,3 @@ BOOLEAN GCN_AdapterEvtUsbInterruptReadersFailed(
 
 	return TRUE;
 }
-

@@ -138,8 +138,8 @@ void GCN_Controller_Status_Init(GCN_Controller_Status *aControllerStatus);
 /**	@brief Updates the deadzone parameters (deadzone sensitivity and operating
  *		mode).
  *
- *	@param [in, out] aControllerStatus Pointer to a GCN_Controller_Status structure
- *		of the controller to have its deadzone parameters modified.
+ *	@param [in, out] aControllerStatus Pointer to a GCN_Controller_Status
+ *		structure of the controller to have its deadzone parameters modified.
  *	@param [in] aNewStatus Pointer to a GCN_Controller_Deadzone_Status
  *		describing the new deadzone state for the specified controller.
  *
