@@ -12,8 +12,6 @@
 #include "GCN_Adapter.h"
 #include "GCN_Controller.h"
 
-//TODO Support more than one device!
-
 typedef struct _DEVICE_CONTEXT
 {
 	//USB Level
@@ -78,8 +76,12 @@ NTSTATUS GCN_AdapterCreateDevice(
  *	@remark This function is paged in page PAGE.
  *
  *	@param [in] aDevice USB Device created by GCN_AdapterCreateDevice.
- *	@param [in] aResourceList ?TODO
- *	@param [in] aResourceListTranslated ?TODO
+ *	@param [in] aResourceList Framework handle to a resource-list object that
+ *		identifies what raw resources the PnP manager has allocated for the
+ *		device.
+ *	@param [in] aResourceListTranslated Framework handle to a resource-list
+ *		object that	identifies what translated resources the PnP manager has
+ *		allocated for the device.
  *
  *	@returns NTSTATUS. @See
  *		http://msdn.microsoft.com/en-us/library/cc704588.aspx for details.
@@ -115,18 +117,13 @@ NTSTATUS SelectInterfaces(_In_ WDFDEVICE aDevice);
  */
 NTSTATUS GCN_AdapterPnPInitialize(_In_ PWDFDEVICE_INIT device);
 
-/**	Callback called when ?TODO. Flushes the activity for the device's
- *	self-managed I/O operations. (FIXME I believe the current implementation is
- *	incomplete. It does not actually flush the contents of the self-managed
- *	io-queue)
+/**	Callback called when the device is removed. Flushes the activity for the
+ *		device's self-managed I/O operations.
  *
  *	@remark This function runs at PASSIVE_LEVEL.
  *	@remark This function is paged in page PAGE.
  *
  *	@param [in] aDevice USB Device created by GCN_AdapterCreateDevice.
- *
- *	@returns NTSTATUS. @See
- *		http://msdn.microsoft.com/en-us/library/cc704588.aspx for details.
  *
  */
 EVT_WDF_DEVICE_SELF_MANAGED_IO_FLUSH GCN_AdapterEvtDeviceSelfManagedIoFlush;

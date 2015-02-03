@@ -12,6 +12,9 @@
 
 #include "Include.h"
 
+//Keeps a count of the number of times a device has been added.
+static unsigned int GCN_Adapter_deviceCount = 0;
+
 /**	Loads driver. Called when OS loads driver into memory.
  *
  *	This function is called only once, at the moment the operating system

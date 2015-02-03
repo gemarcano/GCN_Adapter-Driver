@@ -123,11 +123,11 @@ VOID GCN_AdapterEvtInternalDeviceControl(
 		return;
 
 	case IOCTL_GCN_ADAPTER_SET_DEADZONE:
-		status = GCN_AdapterSetSensitivity(device, aRequest);
+		status = GCN_AdapterSetDeadzone(device, aRequest);
 		if (!NT_SUCCESS(status))
 		{
 			TraceEvents(TRACE_LEVEL_ERROR, TRACE_IOCTL,
-				"GCN_AdapterSetSensitivity failed with status: 0x%x\n", status);
+				"GCN_AdapterSetDeadzone failed with status: 0x%x\n", status);
 
 			WdfRequestComplete(aRequest, status);
 		}
@@ -207,9 +207,7 @@ VOID GCN_AdapterEvtInternalDeviceControl(
 
 //Helper IOCTL functions follow below:
 
-VOID GCN_AdapterUsbIoctlGetInterruptMessage(
-	_In_ WDFDEVICE aDevice,
-	_In_ NTSTATUS  aReaderStatus)
+NTSTATUS GCN_AdapterIoctlHIDReadReportHandler(_In_ WDFDEVICE aDevice)
 {
 	NTSTATUS status;
 	WDFREQUEST request;
@@ -247,24 +245,18 @@ VOID GCN_AdapterUsbIoctlGetInterruptMessage(
 		}
 		else
 		{
-			if (NT_SUCCESS(aReaderStatus))
-			{
 				prepare_report(pDevContext, &pDevContext->adapterData, pReport);
 				bytesReturned = bytesToCopy;
-			}
-			else
-			{
-				bytesReturned = 0;
-			}
 		}
 
-		WdfRequestCompleteWithInformation(request,
-			NT_SUCCESS(status) ? aReaderStatus : status, bytesReturned);
+		WdfRequestCompleteWithInformation(request, status, bytesReturned);
 	}
 	else if (status != STATUS_NO_MORE_ENTRIES)
 	{
 		TraceEvents(TRACE_LEVEL_ERROR, TRACE_IOCTL, "WdfIoQueueRetrieveNextRequest status %08x\n", status);
 	}
+
+	return status;
 }
 
 NTSTATUS GCN_AdapterGetHidDescriptor(
@@ -584,7 +576,7 @@ NTSTATUS GCN_AdapterCalibrate(
 	return status;
 }
 
-NTSTATUS GCN_AdapterSetSensitivity(
+NTSTATUS GCN_AdapterSetDeadzone(
 	_In_ WDFDEVICE aDevice,
 	_In_ WDFREQUEST aRequest)
 {

@@ -86,7 +86,8 @@ NTSTATUS GCN_AdapterCreateDevice(
 	return status;
 
 Error:
-	//TODO Some tracing perhaps?
+	TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE,
+		"%!FUNC! failed with status %!STATUS!", status);
 	return status;
 }
 
@@ -217,11 +218,17 @@ NTSTATUS GCN_AdapterEvtDevicePrepareHardware(
 		memory,
 		NULL);
 	
-	status = WdfUsbTargetPipeWriteSynchronously(pDeviceContext->interruptWritePipe, NULL, NULL, &memoryDescriptor, NULL);
+	status = WdfUsbTargetPipeWriteSynchronously(
+		pDeviceContext->interruptWritePipe,
+		NULL,
+		NULL,
+		&memoryDescriptor,
+		NULL);
+
 	if (!NT_SUCCESS(status))
 	{
 		TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE,
-			"WdfUsbTargetPipeWriteSynchronously failed (Init device) %!STATUS!\n", status);
+			"WdfUsbTargetPipeWriteSynchronously failed %!STATUS!\n", status);
 		return status;
 	}
 	
@@ -230,7 +237,7 @@ NTSTATUS GCN_AdapterEvtDevicePrepareHardware(
 
 	status = GCN_AdapterConfigContReaderForInterruptEndPoint(pDeviceContext);
 
-	GCN_Adapter_CreateRawPdo(aDevice, 0);
+	GCN_Adapter_CreateRawPdo(aDevice, GCN_Adapter_deviceCount++);
 
 	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_DEVICE, "%!FUNC! Exit");
 
@@ -336,7 +343,20 @@ NTSTATUS GCN_AdapterPnPInitialize(
 VOID GCN_AdapterEvtDeviceSelfManagedIoFlush(
 	_In_ WDFDEVICE aDevice)
 {
-	GCN_AdapterUsbIoctlGetInterruptMessage(aDevice, STATUS_DEVICE_REMOVED);
+	//There is one queue that is self managed that needs to be flushed
+	//flush the queue by responding to each currently queued message.
+	NTSTATUS status;
+	do
+	{
+		status = GCN_AdapterIoctlHIDReadReportHandler(aDevice);
+	} while (NT_SUCCESS(status));
+
+	if (status != STATUS_NO_MORE_ENTRIES)
+	{
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE,
+			"Device failed to flush IO queue!!! %!STATUS!\n",
+			status);
+	}
 }
 
 NTSTATUS GCN_AdapterQueueInitialize(_In_ WDFDEVICE aDevice)
@@ -357,7 +377,6 @@ NTSTATUS GCN_AdapterQueueInitialize(_In_ WDFDEVICE aDevice)
 
 	queueConfig.EvtIoInternalDeviceControl = GCN_AdapterEvtInternalDeviceControl;
 	queueConfig.EvtIoDeviceControl = GCN_AdapterEvtInternalDeviceControl;
-	queueConfig.EvtIoStop = GCN_AdapterEvtIoStop;
 
 	status = WdfIoQueueCreate(
 		aDevice,
@@ -384,7 +403,6 @@ NTSTATUS GCN_AdapterQueueInitialize(_In_ WDFDEVICE aDevice)
 	WDF_IO_QUEUE_CONFIG_INIT(&queueConfig, WdfIoQueueDispatchSequential);
 
 	queueConfig.EvtIoRead = GCN_AdapterEvtIoRead;
-	queueConfig.EvtIoStop = GCN_AdapterEvtIoStop;
 
 	status = WdfIoQueueCreate(
 		aDevice,
@@ -421,7 +439,6 @@ NTSTATUS GCN_AdapterQueueInitialize(_In_ WDFDEVICE aDevice)
 	WDF_IO_QUEUE_CONFIG_INIT(&queueConfig, WdfIoQueueDispatchSequential);
 
 	queueConfig.EvtIoWrite = GCN_AdapterEvtIoWrite;
-	queueConfig.EvtIoStop = GCN_AdapterEvtIoStop;
 
 	status = WdfIoQueueCreate(
 		aDevice,
@@ -476,6 +493,8 @@ NTSTATUS GCN_AdapterQueueInitialize(_In_ WDFDEVICE aDevice)
 	return status;
 
 Error:
-	//FIXME do something like tracing?
+	TraceEvents(TRACE_LEVEL_ERROR, TRACE_DEVICE,
+		"%!FUNC! failed with status %!STATUS!!", status);
+
 	return status;
 }

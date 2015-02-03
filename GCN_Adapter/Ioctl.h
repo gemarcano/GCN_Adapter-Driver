@@ -10,18 +10,19 @@
 
 #include "Include.h"
 
-/**	Handles the completion of pended IOCTL requests (READ_REPORT).
+/**	Handles the completion of pended HID READ_REPORT IOCTL requests.
  *
  *	@param [in] aDevice USB Device created by GCN_AdapterCreateDevice. 
- *	@param [in] aReaderStatus Status of how the read went.
  *	
  *	@remark This function runs at IRQL <= DISPATCH_LEVEL by the framework.
  * 	@remark This function is not paged.
  *
+ *	@returns STATUS_SUCCESS if a message was serviced, STATUS_NO_MORE_ENTRIES if
+ *		there is nothing else to process. Any other NTSTATUS represents an
+ *		error. @See http://msdn.microsoft.com/en-us/library/cc704588.aspx for
+ *		details.
  */
-VOID GCN_AdapterUsbIoctlGetInterruptMessage(
-	_In_ WDFDEVICE aDevice,
-	_In_ NTSTATUS  aReaderStatus);
+NTSTATUS GCN_AdapterIoctlHIDReadReportHandler(_In_ WDFDEVICE aDevice);
 
 /**	Handles returning the HID Descriptor to the given request.
  *
@@ -29,7 +30,7 @@ VOID GCN_AdapterUsbIoctlGetInterruptMessage(
  *	@param [in] aRequest Request received asking for the HID Descriptor.
  *
  *	@remark This function runs at IRQL <= DISPATCH_LEVEL since it is called by
- *		GCN_AdapterUsbIoctlGetInterruptMessage.
+ *		GCN_AdapterIoctlHIDReadReportHandler.
  * 	@remark This function is not paged.
  *
  *	@post The request is fullfilled if successful.
@@ -46,7 +47,7 @@ NTSTATUS GCN_AdapterGetHidDescriptor(
  *	@param [in] aRequest Request received asking for USB device attributes.
  *
  *	@remark This function runs at IRQL <= DISPATCH_LEVEL since it is called by
- *		GCN_AdapterUsbIoctlGetInterruptMessage.
+ *		GCN_AdapterIoctlHIDReadReportHandler.
  * 	@remark This function is not paged.
  *
  *	@post The request is fullfilled if successful.
@@ -63,7 +64,7 @@ NTSTATUS GCN_AdapterGetDeviceAttributes(
  *	@param [in] aRequest Request received asking for the HID Descriptor.
  *
  *	@remark This function runs at IRQL <= DISPATCH_LEVEL since it is called by
- *		GCN_AdapterUsbIoctlGetInterruptMessage.
+ *		GCN_AdapterIoctlHIDReadReportHandler.
  * 	@remark This function is not paged.
  *
  *	@post The request is fullfilled if successful.
@@ -84,7 +85,7 @@ NTSTATUS GCN_AdapterGetReportDescriptor(
  *	@param [in] aIoControlCode IOCTL code received with request.
  *
  *	@remark This function runs at IRQL <= DISPATCH_LEVEL since it is called by
- *		GCN_AdapterUsbIoctlGetInterruptMessage.
+ *		GCN_AdapterIoctlHIDReadReportHandler.
  * 	@remark This function is not paged.
  *
  *	@post The request is fullfilled one way or another.
@@ -97,7 +98,7 @@ EVT_WDF_IO_QUEUE_IO_INTERNAL_DEVICE_CONTROL GCN_AdapterEvtInternalDeviceControl;
  *	@param [in] aRequest Request received with IOCTL information.
  *
  *	@remark This function runs at IRQL <= DISPATCH_LEVEL since it is called by
- *		GCN_AdapterUsbIoctlGetInterruptMessage.
+ *		GCN_AdapterIoctlHIDReadReportHandler.
  * 	@remark This function is not paged.
  *
  *	@returns NTSTATUS. @See
@@ -113,7 +114,7 @@ NTSTATUS GCN_AdapterSendIdleNotification(_In_ WDFREQUEST aRequest);
  *	@param [in] aRequest Request received with IOCTL information.
  *
  *	@remark This function runs at IRQL <= DISPATCH_LEVEL since it is called by
- *		GCN_AdapterUsbIoctlGetInterruptMessage.
+ *		GCN_AdapterIoctlHIDReadReportHandler.
  * 	@remark This function is not paged.
  *
  *	@returns NTSTATUS. @See
@@ -124,20 +125,20 @@ NTSTATUS GCN_AdapterCalibrate(
 	_In_ WDFDEVICE aDevice,
 	_In_ WDFREQUEST aRequest);
 
-/**	Sets the deadzone parameters for the device (FIXME need to change name).
+/**	Sets the deadzone parameters for the device.
  *
  *	@param [in] aDevice Device to modify.
  *	@param [in] aRequest Request received with IOCTL information.
  *
  *	@remark This function runs at IRQL <= DISPATCH_LEVEL since it is called by
- *		GCN_AdapterUsbIoctlGetInterruptMessage.
+ *		GCN_AdapterIoctlHIDReadReportHandler.
  * 	@remark This function is not paged.
  *
  *	@returns NTSTATUS. @See
  *		http://msdn.microsoft.com/en-us/library/cc704588.aspx for details.
  *
  */
-NTSTATUS GCN_AdapterSetSensitivity(
+NTSTATUS GCN_AdapterSetDeadzone(
 	_In_ WDFDEVICE aDevice,
 	_In_ WDFREQUEST aRequest);
 
@@ -147,7 +148,7 @@ NTSTATUS GCN_AdapterSetSensitivity(
  *	@param [in] aRequest Request received with IOCTL information.
  *
  *	@remark This function runs at IRQL <= DISPATCH_LEVEL since it is called by
- *		GCN_AdapterUsbIoctlGetInterruptMessage.
+ *		GCN_AdapterIoctlHIDReadReportHandler.
  * 	@remark This function is not paged.
  *
  *	@returns NTSTATUS. @See
@@ -164,7 +165,7 @@ NTSTATUS GCN_AdapterGetSensitivity(
  *	@param [in] aRequest Request received with IOCTL information.
  *
  *	@remark This function runs at IRQL <= DISPATCH_LEVEL since it is called by
- *		GCN_AdapterUsbIoctlGetInterruptMessage.
+ *		GCN_AdapterIoctlHIDReadReportHandler.
  * 	@remark This function is not paged.
  *
  *	@returns NTSTATUS. @See

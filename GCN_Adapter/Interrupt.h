@@ -36,7 +36,8 @@ NTSTATUS GCN_AdapterConfigContReaderForInterruptEndPoint(
  *		it runs at the level the IO operation was completed in.
  *	@remark This function is not paged.
  *
- *	@post Data read is stored in device context.
+ *	@post Data read is stored in device context. Next HID READ_REPORT request is
+ *		serviced with most up-to-date data.
  *
  */
 VOID GCN_AdapterEvtUsbInterruptPipeReadComplete(
@@ -45,16 +46,16 @@ VOID GCN_AdapterEvtUsbInterruptPipeReadComplete(
 	size_t aNumBytesTransferred,
 	WDFCONTEXT aContext);
 
-/**	Handles storing the data read from a continuous read if successful.
+/**	Handles the case when the continuous reader fails to read.
  *
  *	@param [in] aPipe Pipe from which data should have been read.
  *	@param [in] aStatus Indicates why reading failed.
- *	@param [in] aUsbdStatus ?FIXME
+ *	@param [in] aUsbdStatus Failed status reported by the usb continuous reader.
  *
  *	@remark This function runs at IRQL == PASSIVE_LEVEL by the framework.
- *	@remark This function is not paged (...why?).
+ *	@remark This function is paged in page PAGE.
  *
- *	@post FIXME TODO Determine what exactly should happen here...
+ *	@post Next HID READ_REPORT request is serviced with most up-to-date data.
  *
  */
 BOOLEAN GCN_AdapterEvtUsbInterruptReadersFailed(

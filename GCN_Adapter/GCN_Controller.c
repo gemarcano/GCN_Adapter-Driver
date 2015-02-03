@@ -76,7 +76,8 @@ void GCN_Adapter_Rumble_Completion(
 	//How about updating rumble status?
 }
 
-NTSTATUS GCN_Adapter_Rumble(PDEVICE_CONTEXT apDeviceContext, BYTE aRumble)
+NTSTATUS GCN_Adapter_Rumble(
+	PDEVICE_CONTEXT _In_ apDeviceContext, BYTE _In_ aRumble)
 {
 	NTSTATUS status;
 	GCN_AdapterData adapterData;
@@ -123,7 +124,9 @@ NTSTATUS GCN_Adapter_Rumble(PDEVICE_CONTEXT apDeviceContext, BYTE aRumble)
 	}
 
 Exit:
-	//FIXME add tracing?
+	TraceEvents(TRACE_LEVEL_ERROR, TRACE_GCN_CONTROLLER,
+		"%!FUNC! failed with status %!STATUS!!", status);
+
 	return status;
 }
 
@@ -240,8 +243,8 @@ static void handle_null_zones(GCN_Controller_Input _In_ *apCal, GCN_Controller_S
 //This needs to cycle through the 4 controllers
 void prepare_report(
 	PDEVICE_CONTEXT apDeviceContext,
-	GCN_AdapterData *in,
-	GCN_ControllerReport *out)
+	GCN_AdapterData *apAdapterData,
+	GCN_ControllerReport *apControllerReport)
 {
 	//ID should loop from 1 to 4, inclusive ( [1, 4] )
 	static BYTE id = 1;
@@ -249,9 +252,9 @@ void prepare_report(
 	GCN_AdapterData *cal = &apDeviceContext->calibrationData, data;
 	WDFSPINLOCK *lock = &apDeviceContext->dataLock;
 	
-	if (!in->port[id - 1].status.type)
+	if (!apAdapterData->port[id - 1].status.type)
 	{
-		memcpy(out, &GCN_AdapterControllerZero, sizeof(*out));
+		memcpy(apControllerReport, &GCN_AdapterControllerZero, sizeof(*apControllerReport));
 		if (apDeviceContext->controllerStatus[id - 1].lastControllerState)
 		{
 			apDeviceContext->controllerStatus[id - 1].lastControllerState = 0;
@@ -259,12 +262,12 @@ void prepare_report(
 	}
 	else
 	{
-		data = *in;
-		memcpy(&(out->input), &(data.port[id - 1].input), sizeof(out->input));
+		data = *apAdapterData;
+		memcpy(&(apControllerReport->input), &(data.port[id - 1].input), sizeof(apControllerReport->input));
 
-		out->input.axis[0].Y = ~out->input.axis[0].Y;
+		apControllerReport->input.axis[0].Y = ~apControllerReport->input.axis[0].Y;
 
-		handle_null_zones(&cal->port[id-1].input, &status, &out->input);
+		handle_null_zones(&cal->port[id-1].input, &status, &apControllerReport->input);
 
 		//Detect if the device was previously turned off. If so, calibrate
 		if (!apDeviceContext->controllerStatus[id - 1].lastControllerState)
@@ -274,6 +277,6 @@ void prepare_report(
 		}
 	}
 
-	out->id = id;
+	apControllerReport->id = id;
 	id = (id % 4) + 1;
 }

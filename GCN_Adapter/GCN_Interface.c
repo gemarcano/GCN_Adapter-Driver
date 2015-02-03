@@ -103,7 +103,8 @@ ULONG           InstanceNo)
 	}*/
 
 	//
-	// Assign DeviceID - This will be reported to IRP_MN_QUERY_ID/BusQueryDeviceID
+	// Assign DeviceID -
+	//	This will be reported to IRP_MN_QUERY_ID/BusQueryDeviceID
 	//
 	status = WdfPdoInitAssignDeviceID(pDeviceInit, &deviceId);
 	if (!NT_SUCCESS(status)) {
@@ -224,7 +225,8 @@ ULONG           InstanceNo)
 		&queue // pointer to default queue
 		);
 	if (!NT_SUCCESS(status)) {
-		TraceEvents(TRACE_LEVEL_ERROR, TRACE_GCN_INTERFACE, "WdfIoQueueCreate failed 0x%x\n", status);
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_GCN_INTERFACE,
+			"WdfIoQueueCreate failed 0x%x\n", status);
 		goto Cleanup;
 	}
 
@@ -243,7 +245,9 @@ ULONG           InstanceNo)
 	WdfDeviceSetPnpCapabilities(hChild, &pnpCaps);
 
 	//
-	// TODO: In addition to setting NoDisplayInUI in DeviceCaps, we
+	// TODO??? It seems the example is incomplete...
+	//
+	// In addition to setting NoDisplayInUI in DeviceCaps, we
 	// have to do the following to hide the device. Following call
 	// tells the framework to report the device state in
 	// IRP_MN_QUERY_DEVICE_STATE request.
@@ -263,7 +267,8 @@ ULONG           InstanceNo)
 		);
 
 	if (!NT_SUCCESS(status)) {
-		TraceEvents(TRACE_LEVEL_ERROR, TRACE_GCN_INTERFACE, "WdfDeviceCreateDeviceInterface failed 0x%x\n", status);
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_GCN_INTERFACE,
+			"WdfDeviceCreateDeviceInterface failed 0x%x\n", status);
 		goto Cleanup;
 	}
 
@@ -285,7 +290,8 @@ ULONG           InstanceNo)
 
 Cleanup:
 
-	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_GCN_INTERFACE, "%!FUNC! Failed: %!STATUS!", status); 
+	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_GCN_INTERFACE,
+		"%!FUNC! Failed: %!STATUS!", status); 
 
 	//
 	// Call WdfDeviceInitFree if you encounter an error while initializing
@@ -302,4 +308,3 @@ Cleanup:
 
 	return status;
 }
-

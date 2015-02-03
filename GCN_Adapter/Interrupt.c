@@ -3,6 +3,7 @@
 
 #ifdef ALLOC_PRAGMA
 #pragma alloc_text(PAGE, GCN_AdapterConfigContReaderForInterruptEndPoint)
+#pragma alloc_text(PAGE, GCN_AdapterEvtUsbInterruptReadersFailed)
 #endif
 
 _IRQL_requires_(PASSIVE_LEVEL)
@@ -86,8 +87,7 @@ VOID GCN_AdapterEvtUsbInterruptPipeReadComplete(
 	}
 
 	//Handle next Interrupt Message IOCTLs, READ_REPORT
-	//TODO check if this is the only IOCTL message we need to deal with
-	GCN_AdapterUsbIoctlGetInterruptMessage(device, STATUS_SUCCESS);
+	GCN_AdapterIoctlHIDReadReportHandler(device);
 }
 
 BOOLEAN GCN_AdapterEvtUsbInterruptReadersFailed(
@@ -95,13 +95,13 @@ BOOLEAN GCN_AdapterEvtUsbInterruptReadersFailed(
 	_In_ NTSTATUS aStatus,
 	_In_ USBD_STATUS aUsbdStatus)
 {
+	PAGED_CODE();
 	WDFDEVICE device = WdfIoTargetGetDevice(WdfUsbTargetPipeGetIoTarget(aPipe));
 	PDEVICE_CONTEXT pDeviceContext = DeviceGetContext(device);
 
 	UNREFERENCED_PARAMETER(aUsbdStatus);
 	
-	//FIXME do we want to handle messages even when reading from the device failed?
-	//GCN_AdapterUsbIoctlGetInterruptMessage(device, aStatus);
+	GCN_AdapterIoctlHIDReadReportHandler(device);
 
 	return TRUE;
 }

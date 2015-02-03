@@ -49,7 +49,8 @@ VOID GCN_AdapterEvtIoWrite(
 /**	Finishes handling Write requests.
  *
  *	@param[in] aRequest Write request.
- *	@param[in] aTarget ?FIXME
+ *	@param[in] aTarget WDF IO target object that represents the target that
+ *		completed the IO request.
  *	@param[in] aCompletionParams Completion parameters from the request.
  *	@param[in] aContext Device context.
  *
@@ -64,23 +65,5 @@ VOID GCN_AdapterEvtRequestWriteCompletionRoutine(
 	_In_ WDFIOTARGET aTarget,
 	_In_ PWDF_REQUEST_COMPLETION_PARAMS aCompletionParams,
 	_In_ WDFCONTEXT aContext);
-
-/**	Handles stopping I/O requests on a queue about to change power states.
- *
- *	@param [in] aQueue Queue to handle.
- *	@param [in] aRequest ?FIXME
- *	@param [in] aActionFlags Some WDF_REQUEST_STOP_ACTION_FLAGS (bitwise ORed)
- *		that explain why this callback is being called.
- *
- *	@remark This function runs at IRQL <= DISPATCH_LEVEL by the framework.
- *	@remark This function is not paged.
- *
- *	@post ?FIXME
- *
- */
-VOID GCN_AdapterEvtIoStop(
-	_In_ WDFQUEUE aQueue,
-	_In_ WDFREQUEST aRequest,
-	_In_ ULONG aActionFlags);
 
 #endif//_GCN_ADAPTER_IO_H_

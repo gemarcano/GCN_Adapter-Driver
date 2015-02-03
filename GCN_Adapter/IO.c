@@ -158,49 +158,4 @@ VOID GCN_AdapterEvtRequestWriteCompletionRoutine(
 	WdfRequestCompleteWithInformation(aRequest, status, bytesWritten);
 }
 
-VOID GCN_AdapterEvtIoStop(
-	_In_ WDFQUEUE aQueue,
-	_In_ WDFREQUEST aRequest,
-	_In_ ULONG aActionFlags)
-{
-	TraceEvents(TRACE_LEVEL_INFORMATION,
-		TRACE_IO,
-		"!FUNC! Queue 0x%p, Request 0x%p ActionFlags %d",
-		aQueue, aRequest, aActionFlags);
 
-	//
-	// In most cases, the EvtIoStop callback function completes, cancels, or postpones
-	// further processing of the I/O request.
-	//
-	// Typically, the driver uses the following rules:
-	//
-	// - If the driver owns the I/O request, it either postpones further processing
-	//   of the request and calls WdfRequestStopAcknowledge, or it calls WdfRequestComplete
-	//   with a completion status value of STATUS_SUCCESS or STATUS_CANCELLED.
-	//  
-	//   The driver must call WdfRequestComplete only once, to either complete or cancel
-	//   the request. To ensure that another thread does not call WdfRequestComplete
-	//   for the same request, the EvtIoStop callback must synchronize with the driver's
-	//   other event callback functions, for instance by using interlocked operations.
-	//
-	// - If the driver has forwarded the I/O request to an I/O target, it either calls
-	//   WdfRequestCancelSentRequest to attempt to cancel the request, or it postpones
-	//   further processing of the request and calls WdfRequestStopAcknowledge.
-	//
-	// A driver might choose to take no action in EvtIoStop for requests that are
-	// guaranteed to complete in a small amount of time. For example, the driver might
-	// take no action for requests that are completed in one of the driver’s request handlers.
-	//
-
-	UNREFERENCED_PARAMETER(aQueue);
-	UNREFERENCED_PARAMETER(aActionFlags);
-
-	if (aActionFlags &  WdfRequestStopActionSuspend)
-	{
-		WdfRequestStopAcknowledge(aRequest, FALSE); // Don't requeue
-	}
-	else if (aActionFlags &  WdfRequestStopActionPurge)
-	{
-		WdfRequestCancelSentRequest(aRequest);
-	}
-}
