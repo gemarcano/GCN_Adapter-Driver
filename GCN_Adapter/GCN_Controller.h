@@ -172,7 +172,7 @@ void GCN_Controller_Status_Update_Deadzone(
  */
 _IRQL_requires_max_(DISPATCH_LEVEL)
 NTSTATUS GCN_Adapter_Rumble(
-	_Inout_ DEVICE_CONTEXT *apDeviceContext, _In_ BYTE aRumble);
+	_Inout_ DEVICE_CONTEXT *apDeviceContext, _In_ BYTE aRumble[5]);
 
 /**	@brief Triggers rumble for the specified controller at index [0, 3].
  *

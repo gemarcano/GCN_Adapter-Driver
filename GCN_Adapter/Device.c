@@ -96,7 +96,6 @@ NTSTATUS GCN_AdapterCreateDevice(
 	}
 
 	((BYTE*)(WdfMemoryGetBuffer(deviceContext->rumbleMemory, NULL)))[0] = 0x11;
-	deviceContext->rumbleStatus = 0;
 	return status;
 
 Error:

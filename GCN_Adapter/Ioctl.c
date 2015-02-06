@@ -668,6 +668,7 @@ NTSTATUS GCN_AdapterSetRumble(
 {
 	WDF_REQUEST_PARAMETERS params;
 	IOCTL_GCN_Adapter_Rumble_Data *pData;
+	BYTE data[4], i;
 	PDEVICE_CONTEXT pDeviceContext = DeviceGetContext(aDevice);
 	GCN_AdapterData adapterData;
 	NTSTATUS status;
@@ -695,10 +696,24 @@ NTSTATUS GCN_AdapterSetRumble(
 		return status;
 	}
 
-	status = GCN_Adapter_Rumble(pDeviceContext, pData->controllers);
+	//convert data to 4 byte array
+	for (i = 0; i < 3; ++i)
+	{
+		data[i] = !!(pData->controllers & (1 << i));
+	}
 
-	WdfRequestSetInformation(aRequest, 0);
-	WdfRequestComplete(aRequest, status);
+	status = GCN_Adapter_Rumble(pDeviceContext, data);
+
+	if (!NT_SUCCESS(status))
+	{
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_IOCTL,
+			"Setting rumble failed with status: 0x%x\n", status);
+	}
+	else
+	{
+		WdfRequestSetInformation(aRequest, 0);
+		WdfRequestComplete(aRequest, status);
+	}
 
 	TraceEvents(TRACE_LEVEL_VERBOSE, TRACE_IOCTL, "!FUNC! Exit\n");
 	return status;

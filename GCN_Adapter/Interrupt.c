@@ -91,7 +91,8 @@ VOID GCN_AdapterEvtUsbInterruptPipeReadComplete(
 	//offline. Turn rumble off if it is enabled and power is removed
 	if (!pData->port[0].status.powered)
 	{
-		GCN_Adapter_Rumble(pDeviceContext, 0);
+		BYTE data[4] = { 0, 0, 0, 0 };
+		GCN_Adapter_Rumble(pDeviceContext, data);
 	}
 
 	//Handle next Interrupt Message IOCTLs, READ_REPORT

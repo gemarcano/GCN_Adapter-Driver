@@ -93,53 +93,43 @@ void GCN_Adapter_Rumble_Completion(
 	PWDF_REQUEST_COMPLETION_PARAMS apParams,
 	WDFCONTEXT aContext)
 {
-	WDF_REQUEST_COMPLETION_PARAMS params;
+	PDEVICE_CONTEXT pDeviceContext = aContext;
 	NTSTATUS status = WdfRequestGetStatus(aRequest);
-	if (!NT_SUCCESS(status))
+	BYTE i;
+	BYTE *buffer = WdfMemoryGetBuffer(apParams->Parameters.Write.Buffer, NULL);
+
+
+	if (!NT_SUCCESS(status) || !buffer)
 	{
 		goto Exit;
 	}
 
-	WdfRequestGetCompletionParams(aRequest, &params);
-	//TODO do something, tracing, error checking?
-	//How about updating rumble status?
+	for (i = 0; i < 4; ++i)
+	{
+		pDeviceContext->controllerStatus[i].rumble = buffer[i+1];
+	}
+
 Exit:
 	return;
 }
 
 _Use_decl_annotations_
 NTSTATUS GCN_Adapter_Rumble(
-	PDEVICE_CONTEXT apDeviceContext, BYTE aRumble)
+	PDEVICE_CONTEXT apDeviceContext, BYTE aRumble[4])
 {
 	NTSTATUS status;
 	GCN_AdapterData adapterData;
 	WDF_REQUEST_REUSE_PARAMS params;
 	BYTE *data = WdfMemoryGetBuffer(apDeviceContext->rumbleMemory, NULL);
-	BYTE i, newStatus = 0;
+	BYTE i;
 
 	WdfSpinLockAcquire(apDeviceContext->dataLock);
 	adapterData = apDeviceContext->adapterData;
 	WdfSpinLockRelease(apDeviceContext->dataLock);
 
-	if ((adapterData.port[0].status.powered &&
-			(apDeviceContext->rumbleStatus != aRumble)) ||
-		(apDeviceContext->rumbleStatus && !adapterData.port[0].status.powered))
+	if (adapterData.port[0].status.powered)
 	{
-		if (adapterData.port[0].status.powered)
-		{
-			newStatus = aRumble;
-		}
-		else
-		{
-			newStatus = 0;
-		}
-
-		for (i = 0; i < 4; ++i)
-		{
-			data[i + 1] =
-				apDeviceContext->controllerStatus[i].rumble =
-				(newStatus >> i) & 0x01;
-		}
+		memcpy(data + 1, aRumble, 4);
 
 		WDF_REQUEST_REUSE_PARAMS_INIT(
 			&params, WDF_REQUEST_REUSE_NO_FLAGS, STATUS_SUCCESS);
@@ -154,10 +144,11 @@ NTSTATUS GCN_Adapter_Rumble(
 		{
 			goto Exit;
 		}
+	
 		WdfRequestSetCompletionRoutine(
 			apDeviceContext->rumbleRequest,
 			GCN_Adapter_Rumble_Completion,
-			NULL);
+			(WDFCONTEXT*)apDeviceContext);
 
 		if (!WdfRequestSend(
 			apDeviceContext->rumbleRequest,
@@ -167,9 +158,7 @@ NTSTATUS GCN_Adapter_Rumble(
 			status = WdfRequestGetStatus(apDeviceContext->rumbleRequest);
 			goto Exit;
 		}
-
-		apDeviceContext->rumbleStatus = newStatus; //FIXME Should it be protected?
-	}
+	}	
 	else
 	{
 		status = STATUS_SUCCESS;
@@ -191,20 +180,22 @@ NTSTATUS GCN_Controller_Rumble(
 {
 	NTSTATUS status = STATUS_BAD_DATA;
 	if (aIndex < 4)
-	{
-		BYTE rumble = apDeviceContext->rumbleStatus;
+	{	
+		BYTE rumble[4];
+		BYTE i;
 		
 		if (aIndex < 0)
 		{
-			rumble = aRumble ? 0xf : 0;
-		}
-		else if (aRumble)
-		{
-			rumble |= 1 << aIndex;
+			memset(rumble, 1, 4);
 		}
 		else
 		{
-			rumble &= ~(1 << aIndex);
+			for (i = 0; i < 4; ++i)
+			{
+				rumble[i] = apDeviceContext->controllerStatus[i].rumble;
+			}
+
+			rumble[aIndex] = aRumble;
 		}
 
 		status = GCN_Adapter_Rumble(apDeviceContext, rumble);
