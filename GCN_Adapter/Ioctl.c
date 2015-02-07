@@ -697,7 +697,7 @@ NTSTATUS GCN_AdapterSetRumble(
 	}
 
 	//convert data to 4 byte array
-	for (i = 0; i < 3; ++i)
+	for (i = 0; i < 4; ++i)
 	{
 		data[i] = !!(pData->controllers & (1 << i));
 	}

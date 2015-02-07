@@ -96,8 +96,7 @@ void GCN_Adapter_Rumble_Completion(
 	PDEVICE_CONTEXT pDeviceContext = aContext;
 	NTSTATUS status = WdfRequestGetStatus(aRequest);
 	BYTE i;
-	BYTE *buffer = WdfMemoryGetBuffer(apParams->Parameters.Write.Buffer, NULL);
-
+	BYTE *buffer = WdfMemoryGetBuffer(apParams->Parameters.Usb.Completion->Parameters.PipeWrite.Buffer, NULL);
 
 	if (!NT_SUCCESS(status) || !buffer)
 	{
